@@ -1,6 +1,6 @@
 # CSE 230 Project: Typeracer
 
-## Introduction
+# Introduction
 
 As computer scientists and software engineers, it's not unreasonable to say many of us are competitive. It would also be fair to say that most of us have spent a great deal of time at our computers. When you mix these two traits together, you get programming competitions and mathlathons, but more importantly, you get typing races, better known as [typeracer](https://play.typeracer.com/). 
 
@@ -8,7 +8,7 @@ The premise of the game is simple. You gather your friends together and you want
 
 In the end, the fastest (not necessarily the most accurate) typist is determined the winner, and they can take pride in their specialized ability. 
 
-## Proposal
+# Project Proposal
 
 So immediately after hearing about creating a project involving a CLI, we thought to recreate typeracer, an online game where you can challenge your friend to see who types the fastest. Typeracer simulates a race, where contestants prepare to type out some randomly selected text of around 50-100 words, and whoever types out that text the fastest wins. If contestants make a mistake while typing out the text, they cannot continue until they rectify it. 
 
