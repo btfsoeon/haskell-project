@@ -1,5 +1,7 @@
 # CSE 230 Project: Typeracer
 
+Cameron Trando, Alex Park
+
 # Introduction
 
 As computer scientists and software engineers, it's not unreasonable to say many of us are competitive. It would also be fair to say that most of us have spent a great deal of time at our computers. When you mix these two traits together, you get programming competitions and mathlathons, but more importantly, you get typing races, better known as [typeracer](https://play.typeracer.com/). 
