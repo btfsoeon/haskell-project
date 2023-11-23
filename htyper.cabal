@@ -1,0 +1,109 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.4.
+--
+-- see: https://github.com/sol/hpack
+
+name:           htyper
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/Simon-Hostettler/htyper#readme>
+homepage:       https://github.com/Simon-Hostettler/htyper#readme
+bug-reports:    https://github.com/Simon-Hostettler/htyper/issues
+author:         Simon Hostettler
+maintainer:     simon.hostettler@protonmail.com
+copyright:      2022 Simon Hostettler
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+data-files:
+    1000us.txt
+    quotes.txt
+data-dir:       textfiles
+
+source-repository head
+  type: git
+  location: https://github.com/Simon-Hostettler/htyper
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_htyper
+  hs-source-dirs:
+      src
+  build-depends:
+      base >=4.7 && <5
+    , brick
+    , bytestring
+    , cursor
+    , directory
+    , formatting
+    , optparse-applicative
+    , random
+    , random-shuffle
+    , split
+    , terminal-size
+    , text
+    , time
+    , utf8-string
+    , vty
+  default-language: Haskell2010
+
+executable htyper
+  main-is: Main.hs
+  other-modules:
+      Config
+      TypingTest
+      UI
+      Paths_htyper
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2
+  build-depends:
+      base >=4.7 && <5
+    , brick
+    , bytestring
+    , cursor
+    , directory
+    , formatting
+    , htyper
+    , optparse-applicative
+    , random
+    , random-shuffle
+    , split
+    , terminal-size
+    , text
+    , time
+    , utf8-string
+    , vty
+  default-language: Haskell2010
+
+test-suite htyper-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_htyper
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , brick
+    , bytestring
+    , cursor
+    , directory
+    , formatting
+    , htyper
+    , optparse-applicative
+    , random
+    , random-shuffle
+    , split
+    , terminal-size
+    , text
+    , time
+    , utf8-string
+    , vty
+  default-language: Haskell2010
