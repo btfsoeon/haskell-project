@@ -1,0 +1,61 @@
+name: typeracer
+version: 0.1.0.0
+license: BSD3
+
+extra-source-files:
+  - README.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+
+dependencies:
+  - base >= 4.7 && < 5
+  - brick < 1
+  - vty
+  - directory
+  - cursor
+  - split
+  - random
+  - random-shuffle
+  - time
+  - optparse-applicative
+  - terminal-size
+  - formatting
+  - text
+  - bytestring
+  - utf8-string
+library:
+  source-dirs: src
+
+data-dir: textfiles
+data-files:
+  - 1000us.txt
+  - quotes.txt
+
+executables:
+  typeracer:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -O2
+    dependencies:
+      - typeracer
+
+tests:
+  typeracer-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - typeracer
