@@ -29,7 +29,7 @@ main = do
   conf <- readConfig
   runTest conf =<< execParser opts
     where
-      opts = info (argparse <**> helper) (fullDesc <> progDesc "A cli-based typing test written in haskell" <> header "htyper")
+      opts = info (argparse <**> helper) (fullDesc <> progDesc "A cli-based typing test written in haskell" <> header "typeracer")
 
 
 runTest :: Conf -> Arguments ->IO ()

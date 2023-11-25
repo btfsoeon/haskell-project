@@ -27,7 +27,7 @@ import           Graphics.Vty                 (Attr, Vty (update), defAttr,
                                                withForeColor)
 import           Graphics.Vty.Attributes      (brightBlack, magenta, red, white)
 import           Graphics.Vty.Input.Events
-import           Paths_htyper                 (getDataFileName)
+import           Paths_typeracer                 (getDataFileName)
 import           Prelude                      hiding (concat)
 import           System.Console.Terminal.Size (Window (height, width), size)
 import           TypingTest
@@ -51,7 +51,7 @@ ui conf args = do
   {- ↑ will be removed if Vty implements changing the cursor shape-}
   initialState <- buildInitialState dim conf args
   let fgcolor = uncurry3 rgbColor (fgColor conf)
-  endState <- customMain initialVty buildVty (Just chan) (htyper (fg fgcolor)) initialState
+  endState <- customMain initialVty buildVty (Just chan) (typeracer (fg fgcolor)) initialState
   return ()
 
 {-constant Attribute names-}
@@ -68,14 +68,14 @@ data Tick = Tick
 
 type Name = ()
 
-htyper :: Attr -> App TestState Tick Name
-htyper fgcolor =
+typeracer :: Attr -> App TestState Tick Name
+typeracer fgcolor =
   App
     { appDraw = drawUI,
       appChooseCursor = showFirstCursor,
       appHandleEvent = handleInputEvent,
       appStartEvent = pure,
-      appAttrMap = const $ attrMap mempty [(standard, fg white), (corr, fgcolor), (wrong, fg red), (unfilled, fg brightBlack)]
+      appAttrMap = const $ attrMap defAttr [(standard, fg white), (corr, fgcolor), (wrong, fg red), (unfilled, fg brightBlack)]
     }
 
 {- draws either the typing test or the results depending on state -}
@@ -132,7 +132,7 @@ drawKeyInfo s =
 
 drawTestScreen :: TestState -> [Widget Name]
 drawTestScreen s =
-  [ borderWLabel " htyper " vhCenter $
+  [ borderWLabel " typeracer " vhCenter $
       vBox
         [ if mode (args s) == Timed then str (show (time_left s)) else str "",
           showCursor () (Location (bimap getCol getRow curLoc)) $
@@ -224,7 +224,7 @@ drawChar (c1, c2)
   | c1 /= c2 = withAttr wrong (str [c2])
   | otherwise = str [' ']
 
-{- Ctrl-q exits htyper, Ctrl-r reloads htyper, Ctrl-g show test history, any other input is handled by the test -}
+{- Ctrl-q exits typeracer, Ctrl-r reloads typeracer, Ctrl-g show test history, any other input is handled by the test -}
 handleInputEvent :: TestState -> BrickEvent Name Tick -> EventM n (Next TestState)
 handleInputEvent s i =
   case i of

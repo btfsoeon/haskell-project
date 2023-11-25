@@ -51,7 +51,7 @@ import           Data.Text                   (Text)
 import           Data.Time.Clock             (UTCTime, diffUTCTime,
                                               getCurrentTime)
 import           Formatting                  (int, sformat, (%))
-import           Paths_htyper                (getDataFileName)
+import           Paths_typeracer             (getDataFileName)
 import           System.Directory            (getHomeDirectory)
 import           System.Exit                 (die)
 import           System.Random               (newStdGen)
@@ -349,13 +349,13 @@ saveRes s = do
   let cons = show (getConsistency s)
   let str = intercalate "," [wpm, rawwpm, acc, cons] ++ "\n"
   home <- getHomeDirectory
-  BS.appendFile (home ++ "/.config/htyper/results.txt") (BSU.fromString str)
+  BS.appendFile (home ++ "/.config/typeracer/results.txt") (BSU.fromString str)
 
 {- returns list of testresults saved in results.txt -}
 parseRes :: IO [TestRes]
 parseRes = do
   home <- getHomeDirectory
-  content <- BSU.toString <$!> BS.readFile (home ++ "/.config/htyper/results.txt")
+  content <- BSU.toString <$!> BS.readFile (home ++ "/.config/typeracer/results.txt")
   let lines = filter (not . all isSpace) (splitOn "\n" content)
   return (map (toRes . splitOn ",") lines)
     where

@@ -19,25 +19,25 @@ data Conf = Conf
 createResFile :: IO ()
 createResFile = do
     home <- getHomeDirectory
-    let resfile = home ++ "/.config/htyper/results.txt"
+    let resfile = home ++ "/.config/typeracer/results.txt"
     fileExists <- doesFileExist resfile
     unless fileExists (writeFile resfile "")
 
-{- Creates and initializes default config in ~/.config/htyper/htyper.conf -}
+{- Creates and initializes default config in ~/.config/typeracer/typeracer.conf -}
 createDefaultConfig :: IO ()
 createDefaultConfig = do
     home <- getHomeDirectory
-    _ <- createDirectoryIfMissing True (home ++ "/.config/htyper")
+    _ <- createDirectoryIfMissing True (home ++ "/.config/typeracer")
 
     let text = "fgcolor = fc6f03\ncursorshape = 5\nnumcommonwords = 250"
-    writeFile (home ++ "/.config/htyper/htyper.conf") text
+    writeFile (home ++ "/.config/typeracer/typeracer.conf") text
 
-{- Creates Conf from settings found in ~/.config/htyper/htyper.conf, if file doesn't exist
+{- Creates Conf from settings found in ~/.config/typeracer/typeracer.conf, if file doesn't exist
    it creates and initializes the file -}
 readConfig :: IO Conf
 readConfig = do
     home <- getHomeDirectory
-    let fp = home ++ "/.config/htyper/htyper.conf"
+    let fp = home ++ "/.config/typeracer/typeracer.conf"
     confExists <- doesFileExist fp
     unless confExists createDefaultConfig
     createResFile

@@ -1,14 +1,9 @@
-name: htyper
+name: typeracer
 version: 0.1.0.0
-github: "Simon-Hostettler/htyper"
 license: BSD3
-author: "Simon Hostettler"
-maintainer: "simon.hostettler@protonmail.com"
-copyright: "2022 Simon Hostettler"
 
 extra-source-files:
   - README.md
-  - ChangeLog.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -17,11 +12,10 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description: Please see the README on GitHub at <https://github.com/Simon-Hostettler/htyper#readme>
 
 dependencies:
   - base >= 4.7 && < 5
-  - brick
+  - brick < 1
   - vty
   - directory
   - cursor
@@ -44,7 +38,7 @@ data-files:
   - quotes.txt
 
 executables:
-  htyper:
+  typeracer:
     main: Main.hs
     source-dirs: app
     ghc-options:
@@ -53,10 +47,10 @@ executables:
       - -with-rtsopts=-N
       - -O2
     dependencies:
-      - htyper
+      - typeracer
 
 tests:
-  htyper-test:
+  typeracer-test:
     main: Spec.hs
     source-dirs: test
     ghc-options:
@@ -64,4 +58,4 @@ tests:
       - -rtsopts
       - -with-rtsopts=-N
     dependencies:
-      - htyper
+      - typeracer
