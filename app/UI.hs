@@ -8,7 +8,7 @@ import           Brick                  (App (..), AttrName, BrickEvent (..),
                                          attrName, continue, defaultMain,
                                          emptyWidget, fg, halt, padAll,
                                          padBottom, showCursor, showFirstCursor,
-                                         str, withAttr, (<+>), (<=>), vBox, padTop)
+                                         str, withAttr, (<+>), (<=>), vBox, padTop, customMain)
 import           Brick.Widgets.Center   (center)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char              (isSpace)
@@ -17,11 +17,16 @@ import           Data.Time              (getCurrentTime)
 import           Data.Word              (Word8)
 import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
                                          Modifier (..), bold, defAttr,
-                                         withStyle)
+                                         withStyle, mkVty)
 import           Text.Printf            (printf)
 
 import           TypingTest
 import Brick.Widgets.Core
+import qualified Brick.BChan
+import qualified Graphics.Vty.Config as Graphics.Vty
+import Control.Concurrent (ThreadId, forkIO, threadDelay, MVar)
+import Control.Concurrent.MVar (newEmptyMVar, takeMVar)
+import Control.Concurrent.MVar (putMVar)
 
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
@@ -68,12 +73,15 @@ computeCarPadding s =
 
 drawCar :: State -> Widget ()
 drawCar s = padLeft (Pad $ computeCarPadding s) . padTop (Pad 1) . padBottom (Pad 1) $ str $ car s 
+
+drawCounter :: State -> Widget ()
+drawCounter s = str $ show $ counter s
   
 draw :: State -> [Widget ()]
 draw s
   | hasEnded s = pure . center . padAll 1 . vBox $ [drawCar s, drawText s, drawResults s]
   | otherwise =
-    pure . center . padAll 1 . vBox $ [drawCar s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+    pure . center . padAll 1 . vBox $ [drawCounter s, drawCar s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
 
 
 handleChar :: Char -> State -> EventM () (Next State)
@@ -84,11 +92,13 @@ handleChar c s
   | isComplete s' = do
     now <- liftIO getCurrentTime
     continue $ stopClock now s'
-  | otherwise = continue s'
+  | otherwise = 
+    continue s'
   where
     s' = applyChar c s
 
-handleEvent :: State -> BrickEvent () e -> EventM () (Next State)
+handleEvent :: State -> BrickEvent () CounterEvent -> EventM () (Next State)
+handleEvent s (AppEvent (Counter i)) = continue s {counter = counter s + 1}
 handleEvent s (VtyEvent (EvKey key [MCtrl])) =
   case key of
     -- control C, control D
@@ -120,7 +130,7 @@ handleEvent s (VtyEvent (EvKey key []))
       _       -> continue s
 handleEvent s _ = continue s
 
-app :: Attr -> Attr -> Attr -> App State e ()
+app :: Attr -> Attr -> Attr -> App State CounterEvent ()
 app emptyAttr errorAttr resultAttr =
   App
     { appDraw = draw
@@ -137,10 +147,47 @@ app emptyAttr errorAttr resultAttr =
           ]
     }
 
+data CounterEvent = Counter Int
+
+counterThread :: Brick.BChan.BChan CounterEvent -> IO ()
+counterThread chan = do
+    putStrLn "Hello, world!" -- Print the message
+    Brick.BChan.writeBChan chan $ Counter 1
+    putStrLn "goodbye" -- Print the message
+
+setTimer :: MVar Bool -> IO () -> Int -> IO ThreadId
+setTimer stop ioOperation ms =
+  forkIO $ do
+    f
+  where 
+    f = do
+      putStrLn "here"
+      threadDelay (ms*1000)
+      shouldStop <- takeMVar stop
+      putStrLn "there"
+      if shouldStop then
+        return ()
+      else do
+          threadDelay (ms*1000)
+          ioOperation
+          putMVar stop False
+          f
+
 run :: Word8 -> Word8 -> State -> IO Bool
 run fgEmptyCode fgErrorCode initialState = do
-  s <- defaultMain (app emptyAttr errorAttr resultAttr) initialState
-  return $ loop s
+  stopFlag <- newEmptyMVar
+  putMVar stopFlag False
+
+  eventChan <- Brick.BChan.newBChan 10
+  let buildVty = Graphics.Vty.mkVty Graphics.Vty.defaultConfig
+  initialVty <- buildVty
+  -- set a timer to keep running
+  setTimer stopFlag (counterThread eventChan) 1000
+  finalState <- customMain initialVty buildVty
+                    (Just eventChan) (app emptyAttr errorAttr resultAttr) initialState
+  
+  putMVar stopFlag True
+  return $ loop finalState
   where
     emptyAttr = fg . ISOColor $ fgEmptyCode
     errorAttr = flip withStyle bold . fg . ISOColor $ fgErrorCode

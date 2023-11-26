@@ -29,6 +29,7 @@ import           Data.List  (groupBy, isPrefixOf)
 import           Data.Maybe (fromJust, isJust)
 import           Data.Time  (UTCTime, diffUTCTime)
 import GHC.Read (readField)
+import Control.Concurrent (ThreadId, forkIO, threadDelay)
 
 -- It is often useful to know whether the line / character etc we are
 -- considering is "BeforeCursor" or "AfterCursor". More granularity turns out
@@ -50,6 +51,8 @@ data State =
     , screenWidth    :: Int
     -- screen width
     , carWidth    :: Int
+    -- count down timer
+    , counter    :: Int
     -- time when the user started typing
     , start   :: Maybe UTCTime
     , end     :: Maybe UTCTime
@@ -146,6 +149,7 @@ initialState target car =
   State
     { target = target
     , car = car
+    , counter = 0
     , screenWidth = maximum (map length (lines target))
     , carWidth = maximum (map length (lines car))
     , input = takeWhile isSpace target
