@@ -28,7 +28,6 @@ data Config =
     , height            :: Int
     , max_paragraph_len :: Int
     , min_paragraph_len :: Int
-    , nonsense_len      :: Int
     , paragraph         :: Bool
     , reflow_           :: Bool
     , tab               :: Int
@@ -69,9 +68,6 @@ config =
     , min_paragraph_len =
         250 &= typ "WORDS" &=
         help "The minimum length of a sampled paragraph (default: 250)"
-    , nonsense_len =
-        500 &= name "l" &= typ "WORDS" &=
-        help "The length of nonsense to generate (default: 500)"
     , paragraph = def &= help "Sample a paragraph from the input files"
     , reflow_ = def &= help "Reflow paragraph to the target width"
     , tab = 4 &= typ "SIZE" &= help "The size of a tab in spaces (default: 4)"
@@ -90,47 +86,12 @@ wrap width = T.unpack . wrapText wrapSettings width . T.pack
 
 wrapSettings = defaultWrapSettings {preserveIndentation = True, breakLongWords = True}
 
--- wordWeights.txt is taken from
--- https://en.wiktionary.org/wiki/Wiktionary:Frequency_lists#TV_and_movie_scripts
--- (and cleaned up a little with some throwaway sed)
-wordWeights :: [(String, Int)]
-wordWeights =
-  map ((\[w, f] -> (w, read f)) . words) . lines $
-  $(embedStringFile "wordWeights.txt")
-
-totalWeight :: Int
-totalWeight = sum . map snd $ wordWeights
-
-weightedRandomWord :: IO String
-weightedRandomWord = do
-  r <- randomRIO (0, totalWeight - 1)
-  return $ go r wordWeights
-  where
-    go r ((w, f):rest)
-      | r < f = w
-      | otherwise = go (r - f) rest
-
 loopWhile :: Monad m => (a -> Bool) -> m a -> m a
 loopWhile p mx = do
   x <- mx
   if p x
     then loopWhile p mx
     else return x
-
--- Generates nonsense which is superficially similar to English. Similar in the
--- sense that the frequency of words in the generated text is approximately the
--- same as the frequency of words in actual usage.
-nonsense :: Config -> IO String
-nonsense c = do
-  words <- go (nonsense_len c) Nothing
-  return $ (wrap (width c) . unwords $ words) ++ "\n"
-  where
-    go n lastWord
-      | n <= 0 = return []
-      | otherwise = do
-        word <- loopWhile ((== lastWord) . Just) weightedRandomWord
-        rest <- go (n - length word - 1) (Just word) -- extra 1 to count the space
-        return $ word : rest
 
 sample :: Config -> String -> IO String
 sample c file = sampleLine
