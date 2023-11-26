@@ -39,6 +39,7 @@ data-dir: textfiles
 data-files:
   - 1000us.txt
   - passages.txt
+  - car.txt
 
 executables:
   typeracer:

@@ -19,6 +19,7 @@ import           Text.Wrap              (WrapSettings (..), defaultWrapSettings,
                                          wrapText)
 
 import           UI                     (run)
+import           TypingTest             (initialState)
 
 data Config =
   Config
@@ -107,6 +108,9 @@ main :: IO ()
 main = do
   c <- cmdArgs config
   file <- readFile "textfiles/passages.txt"
+  car <- readFile "textfiles/car.txt"
+
   target <- sample c file
-  loop <- run (fg_empty c) (fg_error c) target
+  let s = initialState target car
+  loop <- run (fg_empty c) (fg_error c) s
   when loop main

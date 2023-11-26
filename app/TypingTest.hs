@@ -9,6 +9,8 @@ module TypingTest
   , applyChar
   , atEndOfLine
   , cursor
+  , cursorCol
+  , cursorRow
   , countChars
   , hasEnded
   , hasStarted
@@ -26,6 +28,7 @@ import           Data.Char  (isSpace)
 import           Data.List  (groupBy, isPrefixOf)
 import           Data.Maybe (fromJust, isJust)
 import           Data.Time  (UTCTime, diffUTCTime)
+import GHC.Read (readField)
 
 -- It is often useful to know whether the line / character etc we are
 -- considering is "BeforeCursor" or "AfterCursor". More granularity turns out
@@ -36,8 +39,17 @@ data Position
 
 data State =
   State
-    { target  :: String
+    { 
+    -- target string we want
+      target  :: String
+    -- input string user has put in
     , input   :: String
+    -- car string
+    , car     :: String
+    -- screen width
+    , screenWidth    :: Int
+    -- screen width
+    , carWidth    :: Int
     -- time when the user started typing
     , start   :: Maybe UTCTime
     , end     :: Maybe UTCTime
@@ -129,11 +141,14 @@ applyBackspaceWord s = s {input = reverse . drop n . reverse $ input s}
       | not (isSpace x) && isSpace y = 1
       | otherwise = 1 + toWordBeginning (y : ys)
 
-initialState :: String -> State
-initialState t =
+initialState :: String -> String -> State
+initialState target car =
   State
-    { target = t
-    , input = takeWhile isSpace t
+    { target = target
+    , car = car
+    , screenWidth = maximum (map length (lines target))
+    , carWidth = maximum (map length (lines car))
+    , input = takeWhile isSpace target
     , start = Nothing
     , end = Nothing
     , strokes = 0
