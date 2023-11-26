@@ -12,7 +12,7 @@ extra-source-files:
     README.md
 data-files:
     1000us.txt
-    quotes.txt
+    details.txt
 data-dir:       textfiles
 
 library
@@ -28,7 +28,7 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , brick ==0.73
+    , brick <1
     , bytestring
     , cursor
     , directory
@@ -49,11 +49,11 @@ executable typeracer
   other-modules:
       Paths_typeracer
   hs-source-dirs:
-      src
+      app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       base >=4.7 && <5
-    , brick ==0.73
+    , brick <1
     , bytestring
     , cursor
     , directory
@@ -80,9 +80,8 @@ test-suite typeracer-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , brick ==0.73
+    , brick <1
     , bytestring
-    , word-wrap
     , cursor
     , directory
     , formatting
