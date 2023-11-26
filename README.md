@@ -62,3 +62,14 @@ We'll also present some stretch goals if we managed to finish our original goal 
 ### More detailed typing breakdown
 
 The real typeracer game gives a breakdown of how fast the player was during each segment of the text. For example, it breaks down a text into sections of 10 words each and tells the user how accurate and how fast they were during each segment. This can help someone realize what characters or words are problematic and work to improve their time in the future. 
+
+
+# Setup
+
+You'll need this config set in your `~/.stack/config.yaml` file:
+```
+allow-newer: true
+```
+
+Then just run `stack install` or `stack build`. 
+

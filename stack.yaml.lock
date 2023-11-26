@@ -5,12 +5,12 @@
 
 packages:
 - completed:
-    hackage: brick-0.73@sha256:4302075152feba76d5b89d76dc1209964a9e0efa72181a3495db0c80e911c529,16370
+    hackage: brick-0.73@sha256:4e98001fb327c4933ed132485a10b3bb2253f91da133ac4750fa716d6e5b3e6c,16915
     pantry-tree:
-      sha256: 184404dbe7026254449c8ca5601dd92cb9b11b6ed34bf30c9c15af2b6129f465
+      sha256: d6722c99205f8d9f1afbc5b1fc5f67d088d6db546adbead64e807ac13b0f4975
       size: 6112
   original:
-    hackage: brick-0.73@sha256:4302075152feba76d5b89d76dc1209964a9e0efa72181a3495db0c80e911c529,16370
+    hackage: brick-0.73
 snapshots:
 - completed:
     sha256: 8017c7970c2a8a9510c60cc70ac245d59e0c34eb932b91d37af09fe59855d854
