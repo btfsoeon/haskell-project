@@ -133,35 +133,14 @@ nonsense c = do
         return $ word : rest
 
 sample :: Config -> String -> IO String
-sample c file =
-  if paragraph c && not (null paragraphs)
-    then sampleParagraph
-    else sampleLines
+sample c file = sampleLine
   where
-    sampleParagraph = do
-      r <- randomRIO (0, length paragraphs - 1)
-      return $
-        (if reflow_ c
-           then reflow
-           else wrap (width c))
-          (paragraphs !! r) ++
-        "\n"
-    sampleLines = do
-      r <- randomRIO (0, max 0 $ length (lines ascii) - height c)
-      return . trimEmptyLines . chop . wrap (width c) . chop . unlines . drop r $
-        lines ascii
-    paragraphs =
-      filter
-        ((\l -> l >= min_paragraph_len c && l <= max_paragraph_len c) . length) .
-      map unlines . splitOn [""] . lines $
-      ascii
-    reflow =
-      wrap (width c) .
-      map
-        (\case
-           '\n' -> ' '
-           c -> c)
+    sampleLine = do
+      r <- randomRIO (0, max 0 $ length entries - height c)
+      let entry = entries !! r in
+        return . trimEmptyLines . chop . wrap (width c) . chop . unlines $ lines entry
     ascii = toAscii (tab c) file
+    entries = splitOn "^_^" ascii
     chop = unlines . take (height c) . lines
 
 main :: IO ()

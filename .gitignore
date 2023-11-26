@@ -1,4 +1,4 @@
 .*
 dist-newstyle
 log
-.iml
+*.iml
