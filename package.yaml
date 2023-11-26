@@ -38,7 +38,7 @@ library:
 data-dir: textfiles
 data-files:
   - 1000us.txt
-  - details.txt
+  - passages.txt
 
 executables:
   typeracer:

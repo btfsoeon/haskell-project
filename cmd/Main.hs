@@ -78,8 +78,7 @@ config =
     } &=
   summary "Typeracer 0.0.0.1" &=
   help "Practice typing against a friend!." &=
-  program "gotta-go-fast" &=
-  details (lines $(embedStringFile "details.txt"))
+  program "gotta-go-fast"
 
 wrap :: Int -> String -> String
 wrap width = T.unpack . wrapText wrapSettings width . T.pack
@@ -107,7 +106,7 @@ sample c file = sampleLine
 main :: IO ()
 main = do
   c <- cmdArgs config
-  file <- readFile "details.txt"
+  file <- readFile "textfiles/passages.txt"
   target <- sample c file
   loop <- run (fg_empty c) (fg_error c) target
   when loop main

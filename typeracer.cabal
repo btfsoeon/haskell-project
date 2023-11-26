@@ -12,12 +12,11 @@ extra-source-files:
     README.md
 data-files:
     1000us.txt
-    details.txt
+    passages.txt
 data-dir:       textfiles
 
 library
   exposed-modules:
-      Config
       Lib
       TypingTest
       UI

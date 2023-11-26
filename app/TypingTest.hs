@@ -38,6 +38,7 @@ data State =
   State
     { target  :: String
     , input   :: String
+    -- time when the user started typing
     , start   :: Maybe UTCTime
     , end     :: Maybe UTCTime
     , strokes :: Integer
