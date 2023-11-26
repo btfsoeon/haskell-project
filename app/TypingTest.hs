@@ -162,6 +162,7 @@ page s = linesBeforeCursor ++ linesAfterCursor
   where
     linesBeforeCursor = map (line BeforeCursor) $ take (cursorRow s) linePairs
     linesAfterCursor = map (line AfterCursor) $ drop (cursorRow s) linePairs
+    -- make tuples of lines between what we want (target) and what we have (input)
     linePairs = zip (lines $ target s) (lines (input s) ++ repeat "")
 
 noOfChars :: State -> Int
