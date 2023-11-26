@@ -73,6 +73,7 @@ handleChar c s
 handleEvent :: State -> BrickEvent () e -> EventM () (Next State)
 handleEvent s (VtyEvent (EvKey key [MCtrl])) =
   case key of
+    -- control C, control D
     KChar 'c' -> halt s
     KChar 'd' -> halt s
     KChar 'w' -> continue $ applyBackspaceWord s
