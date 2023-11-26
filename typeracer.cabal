@@ -14,6 +14,7 @@ data-files:
     1000us.txt
     details.txt
 data-dir:       textfiles
+extra-source-files:  details.txt wordWeights.txt
 
 library
   exposed-modules:
@@ -28,9 +29,12 @@ library
       src
   build-depends:
       base >=4.7 && <5
-    , brick <1
+    , brick ==0.73
     , bytestring
+    , cmdargs
     , cursor
+    , file-embed
+    , word-wrap >= 0.5
     , directory
     , formatting
     , optparse-applicative
@@ -47,18 +51,17 @@ library
 executable typeracer
   main-is: Main.hs
   other-modules:
-      Config
-      Lib
-      TypingTest
-      UI
       Paths_typeracer
   hs-source-dirs:
       src
   ghc-options: -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
       base >=4.7 && <5
-    , brick <1
+    , brick ==0.73
     , bytestring
+    , file-embed
+    , cmdargs
+    , word-wrap >= 0.5
     , cursor
     , directory
     , formatting
@@ -84,8 +87,10 @@ test-suite typeracer-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
-    , brick <1
+    , brick ==0.73
     , bytestring
+    , cmdargs
+    , word-wrap
     , cursor
     , directory
     , formatting

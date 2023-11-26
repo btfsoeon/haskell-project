@@ -80,8 +80,8 @@ config =
         help "The width at which to wrap lines (default: 80)"
     , files = def &= args &= typ "FILES"
     } &=
-  summary "Gotta Go Fast 0.3.0.8" &=
-  help "Practice typing and measure your WPM and accuracy." &=
+  summary "Typeracer 0.0.0.1" &=
+  help "Practice typing against a friend!." &=
   program "gotta-go-fast" &=
   details (lines $(embedStringFile "details.txt"))
 
@@ -167,13 +167,7 @@ sample c file =
 main :: IO ()
 main = do
   c <- cmdArgs config
-  fs <- filterM doesFileExist $ files c
-  target <-
-    case fs of
-      [] -> nonsense c
-      _ -> do
-        r <- randomRIO (0, length fs - 1)
-        file <- readFile $ fs !! r
-        sample c file
+  file <- readFile "details.txt"
+  target <- sample c file
   loop <- run (fg_empty c) (fg_error c) target
   when loop main

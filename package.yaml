@@ -15,7 +15,10 @@ extra-source-files:
 
 dependencies:
   - base >= 4.7 && < 5
-  - brick < 1
+  - brick ==0.73
+  - word-wrap >= 0.5
+  - cmdargs
+  - file-embed
   - vty
   - directory
   - cursor
