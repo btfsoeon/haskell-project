@@ -33,7 +33,7 @@ dependencies:
   - bytestring
   - utf8-string
 library:
-  source-dirs: src
+  source-dirs: app
 
 data-dir: textfiles
 data-files:
@@ -43,7 +43,7 @@ data-files:
 executables:
   typeracer:
     main: Main.hs
-    source-dirs: src
+    source-dirs: cmd
     ghc-options:
       - -threaded
       - -rtsopts
