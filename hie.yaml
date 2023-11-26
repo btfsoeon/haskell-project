@@ -1,22 +1,21 @@
 cradle:
   stack:
-    - path: "./src"
+    - path: "./app"
       component: "typeracer:lib"
-
-    - path: "./app/Config.hs"
-      component: "typeracer:exe:typeracer"
-
-    - path: "./app/Main.hs"
-      component: "typeracer:exe:typeracer"
-
-    - path: "./app/TypingTest.hs"
-      component: "typeracer:exe:typeracer"
-
-    - path: "./app/UI.hs"
-      component: "typeracer:exe:typeracer"
-
-    - path: "./app/Paths_typeracer.hs"
-      component: "typeracer:exe:typeracer"
-
+#
+#    - path: "./app/Config.hs"
+#      component: "typeracer:exe:typeracer"
+#
+#    - path: "./app/Main.hs"
+#      component: "typeracer:exe:typeracer"
+#
+#    - path: "./app/TypingTest.hs"
+#      component: "typeracer:exe:typeracer"
+#
+#    - path: "./app/UI.hs"
+#      component: "typeracer:exe:typeracer"
+#
+#    - path: "./app/Paths_typeracer.hs"
+#      component: "typeracer:exe:typeracer"
     - path: "./test"
       component: "typeracer:test:typeracer-test"
