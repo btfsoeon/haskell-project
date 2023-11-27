@@ -76,4 +76,4 @@ Then just run `stack install` or `stack build`.
 
 # Setup for server
 
-Run `cabal install` and then `typeracer-server -p 8000`. 
+Run `stack install` and then `typeracer-server -p 8000`. 
