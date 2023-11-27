@@ -8,7 +8,7 @@ import           Brick                  (App (..), AttrName, BrickEvent (..),
                                          attrName, continue, defaultMain,
                                          emptyWidget, fg, halt, padAll,
                                          padBottom, showCursor, showFirstCursor,
-                                         str, withAttr, (<+>), (<=>))
+                                         str, withAttr, (<+>), (<=>), vBox, padTop)
 import           Brick.Widgets.Center   (center)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char              (isSpace)
@@ -21,6 +21,7 @@ import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
 import           Text.Printf            (printf)
 
 import           TypingTest
+import Brick.Widgets.Core
 
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
@@ -51,12 +52,29 @@ drawResults s =
   withAttr resultAttrName . str $
   printf "%.f words per minute • %.f%% accuracy" (wpm s) (accuracy s * 100)
 
+longestCommonPrefix :: String -> String -> String
+longestCommonPrefix (x:xs) (y:ys) | x == y = x:longestCommonPrefix xs ys
+longestCommonPrefix _ _ = ""
+
+-- computeCarPadding will take the percent completion the user is and multiply by the width of
+-- the terminal space. So when the user is done, we'll be at 100%
+computeCarPadding :: State -> Int
+computeCarPadding s = 
+  let prefix = longestCommonPrefix (target s) (input s)
+      completionPercent = fromIntegral (length prefix) / fromIntegral (length (target s))
+      -- true width is the width of our screen minus the length of the car
+      trueWidth = screenWidth s - carWidth s
+      in ceiling (completionPercent * fromIntegral trueWidth)
+
+drawCar :: State -> Widget ()
+drawCar s = padLeft (Pad $ computeCarPadding s) . padTop (Pad 1) . padBottom (Pad 1) $ str $ car s 
+  
 draw :: State -> [Widget ()]
 draw s
-  | hasEnded s = pure . center . padAll 1 $ drawText s <=> drawResults s
+  | hasEnded s = pure . center . padAll 1 . vBox $ [drawCar s, drawText s, drawResults s]
   | otherwise =
-    pure . center . padAll 1 . showCursor () (Location $ cursor s) $
-    drawText s <=> str " "
+    pure . center . padAll 1 . vBox $ [drawCar s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+
 
 handleChar :: Char -> State -> EventM () (Next State)
 handleChar c s
@@ -119,9 +137,9 @@ app emptyAttr errorAttr resultAttr =
           ]
     }
 
-run :: Word8 -> Word8 -> String -> IO Bool
-run fgEmptyCode fgErrorCode t = do
-  s <- defaultMain (app emptyAttr errorAttr resultAttr) $ initialState t
+run :: Word8 -> Word8 -> State -> IO Bool
+run fgEmptyCode fgErrorCode initialState = do
+  s <- defaultMain (app emptyAttr errorAttr resultAttr) initialState
   return $ loop s
   where
     emptyAttr = fg . ISOColor $ fgEmptyCode
