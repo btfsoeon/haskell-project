@@ -49,7 +49,7 @@ toAscii tabWidth = concatMap toAscii'
       | otherwise = ""
 
 trimEmptyLines :: String -> String
-trimEmptyLines = (++ "\n") . f . f
+trimEmptyLines = f . f
   where
     f = reverse . dropWhile (== '\n')
 
