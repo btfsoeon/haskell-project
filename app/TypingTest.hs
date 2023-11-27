@@ -13,7 +13,8 @@ module TypingTest
   , cursorRow
   , countChars
   , hasEnded
-  , hasStarted
+  , hasGameStarted
+  , hasStartedTyping
   , initialState
   , isComplete
   , onLastLine
@@ -27,7 +28,7 @@ module TypingTest
 import           Data.Char  (isSpace)
 import           Data.List  (groupBy, isPrefixOf)
 import           Data.Maybe (fromJust, isJust)
-import           Data.Time  (UTCTime, diffUTCTime)
+import           Data.Time  (UTCTime (UTCTime), diffUTCTime, getCurrentTime, fromGregorian, secondsToDiffTime)
 import GHC.Read (readField)
 import Control.Concurrent (ThreadId, forkIO, threadDelay)
 
@@ -53,6 +54,12 @@ data State =
     , carWidth    :: Int
     -- count down timer
     , counter    :: Int
+    -- how much we should count down by before starting
+    , howMuchOnCounter :: Int
+    -- time when the game should start
+    , startGameTime   :: UTCTime
+    -- current time
+    , currentTime   :: UTCTime
     -- time when the user started typing
     , start   :: Maybe UTCTime
     , end     :: Maybe UTCTime
@@ -79,8 +86,12 @@ startClock now s = s {start = Just now}
 stopClock :: UTCTime -> State -> State
 stopClock now s = s {end = Just now}
 
-hasStarted :: State -> Bool
-hasStarted = isJust . start
+hasGameStarted :: State -> Bool
+hasGameStarted state = 
+  startGameTime state <= currentTime state
+
+hasStartedTyping :: State -> Bool
+hasStartedTyping = isJust . start
 
 hasEnded :: State -> Bool
 hasEnded = isJust . end
@@ -155,6 +166,9 @@ initialState target car =
     , input = takeWhile isSpace target
     , start = Nothing
     , end = Nothing
+    , howMuchOnCounter = 5
+    , startGameTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0)
+    , currentTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0)
     , strokes = 0
     , hits = 0
     , loop = False
