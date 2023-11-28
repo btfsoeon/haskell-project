@@ -32,6 +32,9 @@ dependencies:
   - text
   - bytestring
   - utf8-string
+  - mtl
+  - network
+  - websockets
 library:
   source-dirs: app
 
