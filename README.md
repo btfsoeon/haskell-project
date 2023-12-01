@@ -77,3 +77,38 @@ Then just run `stack install` or `stack build`.
 # Setup for server
 
 Run `stack install` and then `typeracer-server -p 8000`. 
+
+
+# Project Update
+
+## What is the architecture of your application (the key components)?
+
+The architecture of our app is just a simple client server application. One client acts as the server and talks to the other client. The idea is that one client will determine the time to start and the text to be typed out and send it to the other client. Then the other client will be constantly POSTing its progress and words per minute and GETing the progress and words per minute of the server.
+
+Then each client will have the progress of the other participant as well as the same text and start time. In that way, we can sycnhronize the two to have them start at relatively the same time. To break ties, we'll have the client with the higher words per minute be the winner.
+
+That's the networking part of it.
+
+On the client side, we have an OK UI where we show the text and a car graphic that will move along the page as you make more progress on the text. We have a timer that counts down and won't let you type until the counter hits 0. We'll support two cars on the screen to represent you and your opponentn, and we'll show the words per minute of both.
+
+
+## What challenges (if any) did you have so far and how did you solve them?
+
+The main challenge we've had is working with Haskell. I've worked with many languages before, but I have never encountered a language with such poor package management support. Packages are poorly documented (typing information is not enough!), and there's a lot of conflicting information on whether we should use `stack` or `cabal` or both. It's difficult to force the package manager to pick a specific package version (sometimes cabal overrides stack, or the `package.yaml` overrides both, etc.). This could be unfamiliarity with the language, but upon further research it seems like a very common issue that language infrastructure is poor to abysmal. 
+
+The only IDE with decent support is vscode, and compiler errors are obscure and strange because of the haskell language server tries to infer types and can get it wrong and give questionable output. 
+
+We haven't really been able to solve these. It doesn't get easier, but hopefully we'll get better.
+
+In terms of actual implementation, I hit a snag where I needed a game loop. I wanted a counter to count down from 5 to 1, but we would only handle events on keyboard or mouse events. There was no timer implemented.
+
+So I had to make a timer myself, forking a thread and having it run every 33 milliseconds to simulate 30 fps, firing a new BrickEvent every time the thread ran. In practice, this should have been easy, but Brick had pretty sparse docs on this, particularly on BChan, so it was pretty difficult for me to get this working. I had to infer a lot of behavior based on what I knew about blocking channels from Golang.
+
+
+## Do you expect to meet your goals until the deadline?
+
+I think we should still be able to hit our goals. Maybe the UI won't look as nice as I thought, but at minimum we should be able to get working multiplayer. Once we have that, a lot of the work will be cosmetic improvements. 
+
+## If not, how will you modify your goals?
+
+We'll limit the scope of our cosmetic improvements. We absolutely need that multiplayer implementation though. If it really comes down to it, we'll limit development on that and fully improve cosmetic features intead, but I hope it doesn't come to that.
