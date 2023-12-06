@@ -9,7 +9,7 @@ import           Brick                  (App (..), AttrName, BrickEvent (..),
                                          emptyWidget, fg, halt, padAll,
                                          padBottom, showCursor, showFirstCursor,
                                          str, withAttr, (<+>), (<=>), vBox, padTop, customMain)
-import           Brick.Widgets.Center   (center)
+import           Brick.Widgets.Center   (center, vCenterWith)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char              (isSpace)
 import           Data.Maybe             (fromMaybe)
@@ -21,12 +21,14 @@ import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
 import           Text.Printf            (printf)
 
 import           TypingTest
+import           Lib
 import Brick.Widgets.Core
 import qualified Brick.BChan
 import qualified Graphics.Vty.Config as Graphics.Vty
 import Control.Concurrent (ThreadId, forkIO, threadDelay, MVar)
 import Control.Concurrent.MVar ( newEmptyMVar, takeMVar, putMVar )
 import Data.Fixed (div')
+import GHC.IO.Unsafe (unsafePerformIO)
 
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
@@ -55,24 +57,7 @@ drawText s = padBottom (Pad 2) . foldl (<=>) emptyWidget . map drawLine $ page s
 drawResults :: State -> Widget ()
 drawResults s =
   withAttr resultAttrName . str $
-  printf "%.f words per minute • %.f%% accuracy" (wpm s) (accuracy s * 100)
-
-longestCommonPrefix :: String -> String -> String
-longestCommonPrefix (x:xs) (y:ys) | x == y = x:longestCommonPrefix xs ys
-longestCommonPrefix _ _ = ""
-
--- computeCarPadding will take the percent completion the user is and multiply by the width of
--- the terminal space. So when the user is done, we'll be at 100%
-computeCarPadding :: State -> Int
-computeCarPadding s =
-  let prefix = longestCommonPrefix (target s) (input s)
-      completionPercent = fromIntegral (length prefix) / fromIntegral (length (target s))
-      -- true width is the width of our screen minus the length of the car
-      trueWidth = screenWidth s - carWidth s
-      in ceiling (completionPercent * fromIntegral trueWidth)
-
-drawCar :: State -> Widget ()
-drawCar s = padLeft (Pad $ computeCarPadding s) . padTop (Pad 1) . padBottom (Pad 1) $ str $ car s
+  printf "%.d words per minute • %.f%% accuracy \nPress Enter to play again • Escape to quit." (finalWpm s) (accuracy s * 100)
 
 drawStartCountdown :: State -> Widget ()
 drawStartCountdown s = 
@@ -93,14 +78,29 @@ drawStartCountdown s =
           str " "
         else 
           str $ show counterNum
-  
+
+-- computeCarPadding will take the percent completion the user is and multiply by the width of
+-- the terminal space. So when the user is done, we'll be at 100%
+computeCarPadding :: State -> Int -> Int
+computeCarPadding s trueWidth = ceiling (completionPercent s * fromIntegral trueWidth)
+
+drawWpm :: State -> Widget ()
+drawWpm s = vCenterWith Nothing . str $ padString 8 $ show wpm ++ " wpm"
+  where
+    wpm = unsafePerformIO $ currentWpm s
+
+drawCar :: State -> Widget ()
+drawCar s = let trueWidth = screenWidth s - carWidth s
+                leftPad = computeCarPadding s trueWidth
+                rightPad = screenWidth s - leftPad - carWidth s in
+  vCenterWith Nothing . bottomDottedBorder (screenWidth s) . padRight (Pad rightPad) . padLeft (Pad leftPad) $ str $ car s
 
 draw :: State -> [Widget ()]
 draw s
-  | hasEnded s = pure . center . padAll 1 . vBox $ [drawStartCountdown s, drawCar s, drawText s, drawResults s]
-  | otherwise = pure $ center $ padAll 1 $ vBox widgets
-  where  
-    widgets = [drawStartCountdown s, drawCar s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+  | hasEnded s = pure . center . padAll 1 . vBox $ [topRow s, drawText s, drawResults s]
+  | otherwise =
+    pure . center . padAll 1 . vBox $ [topRow s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+  where topRow s = vBox [drawStartCountdown s, hBox [drawCar s, drawWpm s]]
 
 handleChar :: Char -> State -> EventM () (Next State)
 handleChar c s
@@ -123,8 +123,8 @@ handleEvent s (AppEvent (Counter i now)) = continue s {counter = counter s + 1, 
 handleEvent s (VtyEvent (EvKey key [MCtrl])) =
   case key of
     -- control C, control D
-    KChar 'c' -> halt s
-    KChar 'd' -> halt s
+    KChar 'c' -> halt $ s {loop = False}
+    KChar 'd' -> halt $ s {loop = False}
     KChar 'w' -> continue $ applyBackspaceWord s
     KBS       -> continue $ applyBackspaceWord s
     _         -> continue s
@@ -139,15 +139,15 @@ handleEvent s (VtyEvent (EvKey key [MMeta])) =
 handleEvent s (VtyEvent (EvKey key []))
   | hasEnded s =
     case key of
-      KEnter -> halt s
-      KEsc   -> halt $ s {loop = True}
+      KEsc -> halt $ s {loop = False}
+      KEnter   -> halt $ s {loop = True}
       _      -> continue s
   | otherwise =
     case key of
       KChar c -> handleChar c s
       KEnter  -> handleChar '\n' s
       KBS     -> continue $ applyBackspace s
-      KEsc    -> halt $ s {loop = True}
+      KEsc    -> halt $ s {loop = False}
       _       -> continue s
 handleEvent s _ = continue s
 
