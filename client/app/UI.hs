@@ -9,7 +9,7 @@ import           Brick                  (App (..), AttrName, BrickEvent (..),
                                          emptyWidget, fg, halt, padAll,
                                          padBottom, showCursor, showFirstCursor,
                                          str, withAttr, (<+>), (<=>), vBox, padTop)
-import           Brick.Widgets.Center   (center)
+import           Brick.Widgets.Center   (center, vCenterWith)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char              (isSpace)
 import           Data.Maybe             (fromMaybe)
@@ -21,7 +21,9 @@ import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
 import           Text.Printf            (printf)
 
 import           TypingTest
+import           Lib
 import Brick.Widgets.Core
+import GHC.IO.Unsafe (unsafePerformIO)
 
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
@@ -50,30 +52,30 @@ drawText s = padBottom (Pad 2) . foldl (<=>) emptyWidget . map drawLine $ page s
 drawResults :: State -> Widget ()
 drawResults s =
   withAttr resultAttrName . str $
-  printf "%.f words per minute • %.f%% accuracy" (wpm s) (accuracy s * 100)
-
-longestCommonPrefix :: String -> String -> String
-longestCommonPrefix (x:xs) (y:ys) | x == y = x:longestCommonPrefix xs ys
-longestCommonPrefix _ _ = ""
+  printf "%.f words per minute • %.f%% accuracy" (finalWpm s) (accuracy s * 100)
 
 -- computeCarPadding will take the percent completion the user is and multiply by the width of
 -- the terminal space. So when the user is done, we'll be at 100%
-computeCarPadding :: State -> Int
-computeCarPadding s = 
-  let prefix = longestCommonPrefix (target s) (input s)
-      completionPercent = fromIntegral (length prefix) / fromIntegral (length (target s))
-      -- true width is the width of our screen minus the length of the car
-      trueWidth = screenWidth s - carWidth s
-      in ceiling (completionPercent * fromIntegral trueWidth)
+computeCarPadding :: State -> Int -> Int
+computeCarPadding s trueWidth = ceiling (completionPercent s * fromIntegral trueWidth)
+
+drawWpm :: State -> Widget ()
+drawWpm s = vCenterWith Nothing . str $ padString 8 $ show wpm ++ " wpm"
+  where
+    wpm = unsafePerformIO $ currentWpm s
 
 drawCar :: State -> Widget ()
-drawCar s = padLeft (Pad $ computeCarPadding s) . padTop (Pad 1) . padBottom (Pad 1) $ str $ car s 
-  
+drawCar s = let trueWidth = screenWidth s - carWidth s
+                leftPad = computeCarPadding s trueWidth
+                rightPad = screenWidth s - leftPad - carWidth s in
+  vCenterWith Nothing . bottomDottedBorder (screenWidth s) . padRight (Pad rightPad) . padLeft (Pad leftPad) $ str $ car s
+
 draw :: State -> [Widget ()]
 draw s
-  | hasEnded s = pure . center . padAll 1 . vBox $ [drawCar s, drawText s, drawResults s]
+  | hasEnded s = pure . center . padAll 1 . vBox $ [topRow s, drawText s, drawResults s]
   | otherwise =
-    pure . center . padAll 1 . vBox $ [drawCar s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+    pure . center . padAll 1 . vBox $ [topRow s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
+  where topRow s = hBox [drawCar s, drawWpm s]
 
 
 handleChar :: Char -> State -> EventM () (Next State)
