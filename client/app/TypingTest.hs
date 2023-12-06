@@ -21,13 +21,15 @@ module TypingTest
   , seconds
   , startClock
   , stopClock
-  , wpm
+  , finalWpm
+  , currentWpm
+  , completionPercent
   ) where
 
 import           Data.Char  (isSpace)
 import           Data.List  (groupBy, isPrefixOf)
-import           Data.Maybe (fromJust, isJust)
-import           Data.Time  (UTCTime, diffUTCTime)
+import           Data.Maybe (fromJust, isJust, isNothing)
+import           Data.Time  (UTCTime, diffUTCTime, getCurrentTime)
 import GHC.Read (readField)
 
 -- It is often useful to know whether the line / character etc we are
@@ -146,7 +148,8 @@ initialState target car =
   State
     { target = target
     , car = car
-    , screenWidth = maximum (map length (lines target))
+    -- Use 80 as the default min screen width
+    , screenWidth = maximum (map length (lines target) ++ [80])
     , carWidth = maximum (map length (lines car))
     , input = takeWhile isSpace target
     , start = Nothing
@@ -183,16 +186,40 @@ page s = linesBeforeCursor ++ linesAfterCursor
 noOfChars :: State -> Int
 noOfChars = length . input
 
+currentWpm :: State -> IO Int
+currentWpm s = do
+  let startTime = start s
+  if isNothing startTime
+    then return 0
+    else do
+      timeElapsed <- nowMinusStart s
+      let charsPerSecond = fromIntegral (length $ longestCommonPrefix (target s) (input s)) / timeElapsed
+      return $ round $ charsPerSecond * 60 / 5
+
+nowMinusStart :: State -> IO Double
+nowMinusStart s = do
+  currentTime <- getCurrentTime
+  let startTime = fromJust $ start s
+  return $ realToFrac $ diffUTCTime currentTime startTime
+
+longestCommonPrefix :: String -> String -> String
+longestCommonPrefix (x:xs) (y:ys) | x == y = x:longestCommonPrefix xs ys
+longestCommonPrefix _ _ = ""
+
+completionPercent :: State -> Double
+completionPercent s = let prefix = longestCommonPrefix (target s) (input s)
+      in fromIntegral (length prefix) / fromIntegral (length (target s))
+
+countChars :: State -> Int
+countChars = length . groupBy (\x y -> isSpace x && isSpace y) . target
+
 -- The following functions are only safe to use when both hasStarted and
 -- hasEnded hold.
 seconds :: State -> Double
 seconds s = realToFrac $ diffUTCTime (fromJust $ end s) (fromJust $ start s)
 
-countChars :: State -> Int
-countChars = length . groupBy (\x y -> isSpace x && isSpace y) . target
-
-wpm :: State -> Double
-wpm s = fromIntegral (countChars s) / (5 * seconds s / 60)
+finalWpm :: State -> Double
+finalWpm s = fromIntegral (countChars s) / (5 * seconds s / 60)
 
 accuracy :: State -> Double
 accuracy s = fromIntegral (hits s) / fromIntegral (strokes s)
