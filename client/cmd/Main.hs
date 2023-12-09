@@ -27,7 +27,6 @@ import           Control.Monad       (forever, unless)
 import           Control.Monad.Trans (liftIO)
 import           Network.Socket      (withSocketsDo)
 import           Data.Text           (Text)
-import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 import qualified Network.WebSockets  as WS
 
@@ -132,8 +131,8 @@ app conn = do
     car <- readFile "textfiles/car.txt"
     target <- sample c file
 
-    let s = initialState target car
-    loop <- run (fg_empty c) (fg_error c) s conn
+    let s = initialState target car conn
+    loop <- run (fg_empty c) (fg_error c) s
     when loop main
 
     -- Read from stdin and write to WS
