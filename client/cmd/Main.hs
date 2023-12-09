@@ -123,21 +123,24 @@ app conn = do
         msg <- WS.receiveData conn
         liftIO $ T.putStrLn msg
 
+    putStrLn "Enter your name:"
+    name <- T.getLine
+    WS.sendTextData conn ("Hi! I am " `mappend` name)
+
     c <- cmdArgs config
     file <- readFile "textfiles/passages.txt"
     car <- readFile "textfiles/car.txt"
-
     target <- sample c file
+
     let s = initialState target car
-    loop <- run (fg_empty c) (fg_error c) s
+    loop <- run (fg_empty c) (fg_error c) s conn
     when loop main
 
     -- Read from stdin and write to WS
-    let loop = do
-            line <- T.getLine
-            unless (T.null line) $ WS.sendTextData conn line >> loop
-
-    loop
+    -- let loop2 = do
+    --         line <- T.getLine
+    --         unless (T.null line) $ WS.sendTextData conn line >> loop2
+    -- loop2
     WS.sendClose conn ("Bye!" :: Text)
 
 main :: IO ()
