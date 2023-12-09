@@ -1,11 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+-- WEB SERVER START --
 -- import           Control.Applicative
 -- import           Snap.Core
 -- import           Snap.Util.FileServe
 -- import           Snap.Http.Server
-
 
 -- main :: IO ()
 -- main = quickHttpServe site
@@ -23,8 +23,10 @@ module Main where
 --     param <- getParam "echoparam"
 --     maybe (writeBS "must specify echo/param in URL")
 --           writeBS param
+-- WEB SERVER END --
 
 
+-- WEBSOCKET START --
 import Data.Char (isPunctuation, isSpace)
 import Data.Monoid (mappend)
 import Data.Text (Text)
@@ -40,6 +42,7 @@ import qualified Network.WebSockets as WS
 main :: IO ()
 main = do
     state <- newMVar newServerState
+    liftIO $ print "Starting Server!"
     WS.runServer "127.0.0.1" 8001 $ application state
 
 type Client = (Text, WS.Connection)
@@ -69,7 +72,9 @@ application :: MVar ServerState -> WS.ServerApp
 application state pending = do
     conn <- WS.acceptRequest pending
     WS.forkPingThread conn 30
+
     msg <- WS.receiveData conn
+    liftIO $ print msg
     clients <- liftIO $ readMVar state
     case msg of
         _   | not (prefix `T.isPrefixOf` msg) ->
@@ -104,3 +109,4 @@ talk conn state (user, _) = forever $ do
     msg <- WS.receiveData conn
     liftIO $ readMVar state >>= broadcast
         (user `mappend` ": " `mappend` msg)
+-- WEBSOCKET END --
