@@ -30,6 +30,12 @@ import Control.Concurrent.MVar ( newEmptyMVar, takeMVar, putMVar )
 import Data.Fixed (div')
 import GHC.IO.Unsafe (unsafePerformIO)
 
+import           Data.Text           (Text)
+import qualified Data.Text           as T
+import qualified Data.Text.IO        as T
+import qualified Network.WebSockets  as WS
+
+
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
 
@@ -199,8 +205,8 @@ setTimer stop ioOperation ms =
           putMVar stop False
           f
 
-run :: Word8 -> Word8 -> State -> IO Bool
-run fgEmptyCode fgErrorCode initialState = do
+run :: Word8 -> Word8 -> State -> WS.Connection -> IO Bool
+run fgEmptyCode fgErrorCode initialState conn = do
   stopFlag <- newEmptyMVar
   putMVar stopFlag False
 
@@ -211,7 +217,7 @@ run fgEmptyCode fgErrorCode initialState = do
   setTimer stopFlag (counterThread eventChan) 32
   finalState <- customMain initialVty buildVty
                     (Just eventChan) (app emptyAttr errorAttr resultAttr) initialState
-
+  
   putMVar stopFlag True
   return $ loop finalState
   where
