@@ -1,12 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+<<<<<<< HEAD
 -- WEB SERVER START --
+=======
+>>>>>>> origin/alex/add_websocket
 -- import           Control.Applicative
 -- import           Snap.Core
 -- import           Snap.Util.FileServe
 -- import           Snap.Http.Server
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/alex/add_websocket
 -- main :: IO ()
 -- main = quickHttpServe site
 
@@ -23,10 +30,15 @@ module Main where
 --     param <- getParam "echoparam"
 --     maybe (writeBS "must specify echo/param in URL")
 --           writeBS param
+<<<<<<< HEAD
 -- WEB SERVER END --
 
 
 -- WEBSOCKET START --
+=======
+
+
+>>>>>>> origin/alex/add_websocket
 import Data.Char (isPunctuation, isSpace)
 import Data.Monoid (mappend)
 import Data.Text (Text)
@@ -42,7 +54,10 @@ import qualified Network.WebSockets as WS
 main :: IO ()
 main = do
     state <- newMVar newServerState
+<<<<<<< HEAD
     liftIO $ print "Starting Server!"
+=======
+>>>>>>> origin/alex/add_websocket
     WS.runServer "127.0.0.1" 8001 $ application state
 
 type Client = (Text, WS.Connection)
@@ -109,4 +124,7 @@ talk conn state (user, _) = forever $ do
     msg <- WS.receiveData conn
     liftIO $ readMVar state >>= broadcast
         (user `mappend` ": " `mappend` msg)
+<<<<<<< HEAD
 -- WEBSOCKET END --
+=======
+>>>>>>> origin/alex/add_websocket
