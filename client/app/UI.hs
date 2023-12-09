@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module UI
   ( run
   ) where
@@ -19,6 +21,7 @@ import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
                                          Modifier (..), bold, defAttr,
                                          withStyle, mkVty)
 import           Text.Printf            (printf)
+import           Data.Text              (Text)
 
 import           TypingTest
 import           Lib
@@ -30,7 +33,6 @@ import Control.Concurrent.MVar ( newEmptyMVar, takeMVar, putMVar )
 import Data.Fixed (div')
 import GHC.IO.Unsafe (unsafePerformIO)
 
-import           Data.Text           (Text)
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
 import qualified Network.WebSockets  as WS
@@ -125,7 +127,11 @@ handleChar c s
     s' = applyChar c s
 
 handleEvent :: State -> BrickEvent () CounterEvent -> EventM () (Next State)
-handleEvent s (AppEvent (Counter i now)) = continue s {counter = counter s + 1, currentTime = now}
+handleEvent s (AppEvent (Counter i now)) = do
+  let nextS = s {counter = counter s + 1, currentTime = now}
+  liftIO (WS.sendTextData (conn s) (T.pack (show nextS)))
+  --TODO get and update participants' status
+  continue nextS
 handleEvent s (VtyEvent (EvKey key [MCtrl])) =
   case key of
     -- control C, control D
@@ -205,8 +211,8 @@ setTimer stop ioOperation ms =
           putMVar stop False
           f
 
-run :: Word8 -> Word8 -> State -> WS.Connection -> IO Bool
-run fgEmptyCode fgErrorCode initialState conn = do
+run :: Word8 -> Word8 -> State -> IO Bool
+run fgEmptyCode fgErrorCode initialState = do
   stopFlag <- newEmptyMVar
   putMVar stopFlag False
 

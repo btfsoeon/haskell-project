@@ -34,6 +34,8 @@ import Data.List (groupBy, isPrefixOf)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Data.Time (UTCTime (UTCTime), diffUTCTime, fromGregorian, getCurrentTime, secondsToDiffTime)
 import GHC.Read (readField)
+import qualified Network.WebSockets  as WS
+
 
 -- It is often useful to know whether the line / character etc we are
 -- considering is "BeforeCursor" or "AfterCursor". More granularity turns out
@@ -66,8 +68,13 @@ data State = State
     end :: Maybe UTCTime,
     strokes :: Integer,
     hits :: Integer,
-    loop :: Bool
+    loop :: Bool,
+    conn :: WS.Connection
   } deriving (Show)
+
+-- Dummy instance to stringify WS.Connection
+instance Show WS.Connection where
+  show _ = "connection"
 
 -- For ease of rendering a character in the UI, we tag it as a Hit, Miss, or
 -- Empty. Corresponding to the cases of being correctly typed, incorrectly
@@ -156,8 +163,8 @@ applyBackspaceWord s = s {input = reverse . drop n . reverse $ input s}
       | not (isSpace x) && isSpace y = 1
       | otherwise = 1 + toWordBeginning (y : ys)
 
-initialState :: String -> String -> State
-initialState target car =
+initialState :: String -> String -> WS.Connection -> State
+initialState target car conn =
   State
     { target = target,
       car = car,
@@ -173,7 +180,8 @@ initialState target car =
       currentTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       strokes = 0,
       hits = 0,
-      loop = True
+      loop = True,
+      conn = conn
     }
 
 character :: Position -> (Maybe Char, Maybe Char) -> Character
