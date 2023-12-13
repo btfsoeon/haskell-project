@@ -80,11 +80,7 @@ data State = State
     strokes :: Integer,
     hits :: Integer,
     loop :: Bool
-<<<<<<< Updated upstream
-  } deriving (Show)
-=======
   } deriving Show
->>>>>>> Stashed changes
 
 -- For ease of rendering a character in the UI, we tag it as a Hit, Miss, or
 -- Empty. Corresponding to the cases of being correctly typed, incorrectly
@@ -250,14 +246,17 @@ tick s = if hasStartedTyping s
                      s
                    else s {cpu = (cpu s) {finishTime = Just now}}
               else case randomNumber of
+                 -2 -> s
+                 -1 -> s
                  0 -> s
                  1 -> s { cpu = (cpu s) { input = rawInput ++ [nextChar rawInput (target s)]} }
+                 2 -> s { cpu = (cpu s) { input = rawInput ++ next2Char rawInput (target s)} }
          -- if we haven't started typing don't do anything
          else s
          where now = unsafePerformIO getCurrentTime
                randomNumber = unsafePerformIO randomGen
                randomGen = do
-                 randomRIO (0, 1) :: IO Int
+                 randomRIO (-2, 2) :: IO Int
 
 nowMinusStart :: State -> IO Double
 nowMinusStart s = do

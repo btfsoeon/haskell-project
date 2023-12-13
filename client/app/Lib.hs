@@ -4,6 +4,7 @@ module Lib
     , bottomDottedBorder
     , longestCommonPrefix
     , nextChar
+    , next2Char
     , isEarlier
     ) where
 
@@ -35,6 +36,12 @@ nextChar a b = case (a, b) of
          (ah:at, bh:bt) -> if ah == bh
                            then nextChar at bt
                            else error "a should be a prefix of b"
+
+next2Char :: String -> String -> String
+next2Char a b = do
+                let c1 = nextChar a b
+                let c2 = nextChar (a++[c1]) b
+                [c1,c2]
 
 -- returns whether a time is earlier or not - if they are equal then give benefit of the doubt
 isEarlier :: Maybe UTCTime -> Maybe UTCTime -> Bool
