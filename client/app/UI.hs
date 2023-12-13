@@ -87,26 +87,31 @@ drawStartCountdown s =
 
 -- computeCarPadding will take the percent completion the user is and multiply by the width of
 -- the terminal space. So when the user is done, we'll be at 100%
-computeCarPadding :: State -> Int -> Int
-computeCarPadding s trueWidth = ceiling (completionPercent s * fromIntegral trueWidth)
+computeCarPadding :: State -> Player -> Int -> Int
+computeCarPadding s p trueWidth = ceiling (completionPercent s p * fromIntegral trueWidth)
 
-drawWpm :: State -> Widget ()
-drawWpm s = vCenterWith Nothing . str $ padString 8 $ show wpm ++ " wpm"
+drawPlayerLabel :: State -> String -> Player -> Widget ()
+drawPlayerLabel s name p = case isWinner s p of
+  True -> vCenterWith Nothing (vBox [str "WINNER", str name, str $ padString 8 $ show wpm ++ " wpm"])
+  False -> vCenterWith Nothing (vBox [str name, str $ padString 8 $ show wpm ++ " wpm"])
   where
-    wpm = unsafePerformIO $ currentWpm s
+    wpm = unsafePerformIO $ currentWpm s p
 
-drawCar :: State -> Widget ()
-drawCar s = let trueWidth = screenWidth s - carWidth s
-                leftPad = computeCarPadding s trueWidth
-                rightPad = screenWidth s - leftPad - carWidth s in
+drawCar :: State -> Player -> Widget ()
+drawCar s p = let trueWidth = screenWidth s - carWidth s
+                  leftPad = computeCarPadding s p trueWidth
+                  rightPad = screenWidth s - leftPad - carWidth s in
   vCenterWith Nothing . bottomDottedBorder (screenWidth s) . padRight (Pad rightPad) . padLeft (Pad leftPad) $ str $ car s
+
+drawPlayer :: State -> String -> Player -> Widget ()
+drawPlayer s name p = hBox [drawCar s p, drawPlayerLabel s name p]
 
 draw :: State -> [Widget ()]
 draw s
   | hasEnded s = pure . center . padAll 1 . vBox $ [topRow s, drawText s, drawResults s]
   | otherwise =
     pure . center . padAll 1 . vBox $ [topRow s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
-  where topRow s = vBox [drawStartCountdown s, hBox [drawCar s, drawWpm s]]
+  where topRow s = vBox [drawStartCountdown s, hBox [drawPlayer s "(You)" (me s)], drawPlayer s "(CPU)" (cpu s)]
 
 handleChar :: Char -> State -> EventM () (Next State)
 handleChar c s
@@ -125,7 +130,10 @@ handleChar c s
     s' = applyChar c s
 
 handleEvent :: State -> BrickEvent () CounterEvent -> EventM () (Next State)
-handleEvent s (AppEvent (Counter i now)) = continue s {counter = counter s + 1, currentTime = now}
+-- handle ticks from the counter
+handleEvent s (AppEvent (Counter i now)) = do
+  let newState = tick s
+  continue newState {counter = counter newState + 1, currentTime = now}
 handleEvent s (VtyEvent (EvKey key [MCtrl])) =
   case key of
     -- control C, control D

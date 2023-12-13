@@ -3,6 +3,7 @@ module TypingTest
     Line,
     Page,
     State (..),
+    Player (..),
     accuracy,
     applyBackspace,
     applyBackspaceWord,
@@ -19,11 +20,13 @@ module TypingTest
     isComplete,
     onLastLine,
     page,
+    tick,
     seconds,
     startClock,
     stopClock,
     finalWpm,
     currentWpm,
+    isWinner,
     completionPercent,
   )
 where
@@ -34,6 +37,10 @@ import Data.List (groupBy, isPrefixOf)
 import Data.Maybe (fromJust, isJust, isNothing)
 import Data.Time (UTCTime (UTCTime), diffUTCTime, fromGregorian, getCurrentTime, secondsToDiffTime)
 import GHC.Read (readField)
+import           Lib
+import Brick (EventM, Next)
+import GHC.IO (unsafePerformIO)
+import System.Random (randomRIO)
 
 -- It is often useful to know whether the line / character etc we are
 -- considering is "BeforeCursor" or "AfterCursor". More granularity turns out
@@ -42,11 +49,17 @@ data Position
   = BeforeCursor
   | AfterCursor
 
+data Player = Player
+  {
+    input :: String,
+    finishTime :: Maybe UTCTime
+  } deriving Show
+
 data State = State
   { -- target string we want
     target :: String,
-    -- input string user has put in
-    input :: String,
+    me :: Player,
+    cpu :: Player,
     -- car string
     car :: String,
     -- screen width
@@ -62,12 +75,16 @@ data State = State
     -- current time
     currentTime :: UTCTime,
     -- time when the user started typing
-    start :: Maybe UTCTime,
-    end :: Maybe UTCTime,
+    gameStartTime :: Maybe UTCTime,
+    gameEndTime :: Maybe UTCTime,
     strokes :: Integer,
     hits :: Integer,
     loop :: Bool
+<<<<<<< Updated upstream
   } deriving (Show)
+=======
+  } deriving Show
+>>>>>>> Stashed changes
 
 -- For ease of rendering a character in the UI, we tag it as a Hit, Miss, or
 -- Empty. Corresponding to the cases of being correctly typed, incorrectly
@@ -82,26 +99,26 @@ type Line = [Character]
 type Page = [Line]
 
 startClock :: UTCTime -> State -> State
-startClock now s = s {start = Just now}
+startClock now s = s {gameStartTime = Just now}
 
 stopClock :: UTCTime -> State -> State
-stopClock now s = s {end = Just now}
+stopClock now s = s {gameEndTime = Just now, me = (me s) {finishTime = Just now}}
 
 hasGameStarted :: State -> Bool
 hasGameStarted state =
   startGameTime state <= currentTime state
 
 hasStartedTyping :: State -> Bool
-hasStartedTyping = isJust . start
+hasStartedTyping = isJust . gameStartTime
 
 hasEnded :: State -> Bool
-hasEnded = isJust . end
+hasEnded = isJust . gameEndTime
 
 cursorCol :: State -> Int
-cursorCol = length . takeWhile (/= '\n') . reverse . input
+cursorCol = length . takeWhile (/= '\n') . reverse . input . me
 
 cursorRow :: State -> Int
-cursorRow = length . filter (== '\n') . input
+cursorRow = length . filter (== '\n') . input . me
 
 cursor :: State -> (Int, Int)
 cursor s = (cursorCol s, cursorRow s)
@@ -113,10 +130,10 @@ onLastLine :: State -> Bool
 onLastLine s = cursorRow s + 1 == length (lines $ target s)
 
 isComplete :: State -> Bool
-isComplete s = input s == target s
+isComplete s = input (me s) == target s
 
 isErrorFree :: State -> Bool
-isErrorFree s = input s `isPrefixOf` target s
+isErrorFree s = input (me s) `isPrefixOf` target s
 
 applyChar :: Char -> State -> State
 applyChar c s =
@@ -130,26 +147,26 @@ applyChar c s =
     }
   where
     s'
-      | isSpace c = s {input = input s ++ whitespace}
-      | otherwise = s {input = input s ++ [c]}
+      | isSpace c = s {me = (me s) { input = input ( me s) ++ whitespace }}
+      | otherwise = s {me = (me s) {input =  input (me s) ++ [c]}}
     whitespace =
-      case takeWhile isSpace . drop (length $ input s) $ target s of
+      case takeWhile isSpace . drop (length $ input $ me s) $ target s of
         "" -> " "
         ws -> ws
 
 applyBackspace :: State -> State
-applyBackspace s = s {input = reverse . drop n . reverse $ input s}
+applyBackspace s = s {me = (cpu s) { input = reverse . drop n . reverse $ input $ me s}}
   where
     n =
       case takeWhile (\(i, t) -> isSpace i && isSpace t) . reverse $
-        zip (input s) (target s) of
+        zip (input $ me s) (target s) of
         [] -> 1
         ws -> length ws
 
 applyBackspaceWord :: State -> State
-applyBackspaceWord s = s {input = reverse . drop n . reverse $ input s}
+applyBackspaceWord s = s {me = (cpu s) {input = reverse . drop n . reverse $ input $ me s }}
   where
-    n = toWordBeginning . reverse $ input s
+    n = toWordBeginning . reverse $ input $ me s
     toWordBeginning "" = 0
     toWordBeginning [c] = 1
     toWordBeginning (x : y : ys)
@@ -165,9 +182,10 @@ initialState target car =
       -- Use 80 as the default min screen width
       screenWidth = maximum (map length (lines target) ++ [80]),
       carWidth = maximum (map length (lines car)),
-      input = takeWhile isSpace target,
-      start = Nothing,
-      end = Nothing,
+      me = Player {input = takeWhile isSpace target, finishTime = Nothing},
+      cpu = Player {input = takeWhile isSpace target, finishTime = Nothing},
+      gameStartTime = Nothing,
+      gameEndTime = Nothing,
       howMuchOnCounter = 5,
       startGameTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       currentTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
@@ -197,48 +215,70 @@ page s = linesBeforeCursor ++ linesAfterCursor
   where
     linesBeforeCursor = map (line BeforeCursor) $ take (cursorRow s) linePairs
     linesAfterCursor = map (line AfterCursor) $ drop (cursorRow s) linePairs
-    -- make tuples of lines between what we want (target) and what we have (input)
-    linePairs = zip (lines $ target s) (lines (input s) ++ repeat "")
+    -- make tuples of lines between what we want (target) and what we have (myInput)
+    linePairs = zip (lines $ target s) (lines (input $ me s) ++ repeat "")
 
 noOfChars :: State -> Int
-noOfChars = length . input
+noOfChars = length . input . me
 
-currentWpm :: State -> IO Int
-currentWpm s = do
-  let startTime = start s
-  let endTime = end s
+currentWpm :: State -> Player -> IO Int
+currentWpm s p = do
+  let startTime = gameStartTime s
   if isNothing startTime
     then return 0
     else
-      if isJust endTime
-        then return $ finalWpm s
+      if isJust $ finishTime p
+        then do
+          let timeElapsed = realToFrac $ diffUTCTime (fromJust $ finishTime p) (fromJust startTime)
+              charsPerSecond = fromIntegral (length $ longestCommonPrefix (target s) (input p)) / timeElapsed
+          return $ round $ charsPerSecond * 60 / 5
         else do
           timeElapsed <- nowMinusStart s
-          let charsPerSecond = fromIntegral (length $ longestCommonPrefix (target s) (input s)) / timeElapsed
+          let charsPerSecond = fromIntegral (length $ longestCommonPrefix (target s) (input p)) / timeElapsed
           return $ round $ charsPerSecond * 60 / 5
+
+-- the clock has ticked, let's see whether to add cpu input or not
+tick :: State -> State
+tick s = if hasStartedTyping s
+         then let rawInput = input $ cpu s
+                  currentString = longestCommonPrefix (target s) (input $ cpu s)
+                  inputLength = length rawInput
+                  prefixLength = length currentString
+                 -- if we are done, no need to type any further
+              in if inputLength == length (target s) then
+                   if isJust (finishTime $ cpu s) then
+                     s
+                   else s {cpu = (cpu s) {finishTime = Just now}}
+              else case randomNumber of
+                 0 -> s
+                 1 -> s { cpu = (cpu s) { input = rawInput ++ [nextChar rawInput (target s)]} }
+         -- if we haven't started typing don't do anything
+         else s
+         where now = unsafePerformIO getCurrentTime
+               randomNumber = unsafePerformIO randomGen
+               randomGen = do
+                 randomRIO (0, 1) :: IO Int
 
 nowMinusStart :: State -> IO Double
 nowMinusStart s = do
   currentTime <- getCurrentTime
-  let startTime = fromJust $ start s
+  let startTime = fromJust $ gameStartTime s
   return $ realToFrac $ diffUTCTime currentTime startTime
 
-longestCommonPrefix :: String -> String -> String
-longestCommonPrefix (x : xs) (y : ys) | x == y = x : longestCommonPrefix xs ys
-longestCommonPrefix _ _ = ""
-
-completionPercent :: State -> Double
-completionPercent s =
-  let prefix = longestCommonPrefix (target s) (input s)
+completionPercent :: State -> Player -> Double
+completionPercent s p =
+  let prefix = longestCommonPrefix (target s) (input p)
    in fromIntegral (length prefix) / fromIntegral (length (target s))
 
 countChars :: State -> Int
 countChars = length . groupBy (\x y -> isSpace x && isSpace y) . target
 
--- The following functions are only safe to use when both hasStarted and
--- hasEnded hold.
+-- reports whether the given player is the winner
+isWinner :: State -> Player -> Bool
+isWinner s p = isEarlier (finishTime p) (finishTime (me s)) && isEarlier (finishTime p) (finishTime (cpu s))
+
 seconds :: State -> Double
-seconds s = realToFrac $ diffUTCTime (fromJust $ end s) (fromJust $ start s)
+seconds s = realToFrac $ diffUTCTime (fromJust $ gameEndTime s) (fromJust $ gameStartTime s)
 
 finalWpm :: State -> Int
 finalWpm s = round (fromIntegral (countChars s) / (5 * seconds s / 60))
