@@ -1,4 +1,4 @@
-module TypingTest
+module Typeracer
   ( Character (..),
     Line,
     Page,
@@ -182,7 +182,7 @@ initialState target car =
       cpu = Player {input = takeWhile isSpace target, finishTime = Nothing},
       gameStartTime = Nothing,
       gameEndTime = Nothing,
-      howMuchOnCounter = 5,
+      howMuchOnCounter = 3,
       startGameTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       currentTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       strokes = 0,

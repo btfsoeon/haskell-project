@@ -9,7 +9,7 @@ import           Brick                  (App (..), AttrName, BrickEvent (..),
                                          emptyWidget, fg, halt, padAll,
                                          padBottom, showCursor, showFirstCursor,
                                          str, withAttr, (<+>), (<=>), vBox, padTop, customMain)
-import           Brick.Widgets.Center   (center, vCenterWith)
+import           Brick.Widgets.Center   (center, vCenterWith, hCenterWith)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Char              (isSpace)
 import           Data.Maybe             (fromMaybe)
@@ -20,7 +20,7 @@ import           Graphics.Vty           (Attr, Color (..), Event (..), Key (..),
                                          withStyle, mkVty)
 import           Text.Printf            (printf)
 
-import           TypingTest
+import           Typeracer
 import           Lib
 import Brick.Widgets.Core
 import qualified Brick.BChan
@@ -33,8 +33,10 @@ import GHC.IO.Unsafe (unsafePerformIO)
 import           Data.Text           (Text)
 import qualified Data.Text           as T
 import qualified Data.Text.IO        as T
-import qualified Network.WebSockets  as WS
 
+
+hitAttrName :: AttrName
+hitAttrName = attrName "hit"
 
 emptyAttrName :: AttrName
 emptyAttrName = attrName "empty"
@@ -46,7 +48,7 @@ resultAttrName :: AttrName
 resultAttrName = attrName "result"
 
 drawCharacter :: Character -> Widget ()
-drawCharacter (Hit c)    = str [c]
+drawCharacter (Hit c)    = withAttr hitAttrName $ str [c]
 drawCharacter (Miss ' ') = withAttr errorAttrName $ str ['_']
 drawCharacter (Miss c)   = withAttr errorAttrName $ str [c]
 drawCharacter (Empty c)  = withAttr emptyAttrName $ str [c]
@@ -66,24 +68,31 @@ drawResults s =
   printf "%.d words per minute • %.f%% accuracy \nPress Enter to play again • Escape to quit." (finalWpm s) (accuracy s * 100)
 
 drawStartCountdown :: State -> Widget ()
-drawStartCountdown s = 
-  let gameStartTime = startGameTime s
-      originalStartTime = addUTCTime (-(secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s)) gameStartTime
-      durationTime = diffUTCTime gameStartTime originalStartTime
-      elapsedTime = diffUTCTime (currentTime s) originalStartTime
+drawStartCountdown s = countdown
+  where 
+    countdown =
+      let gameStartTime = startGameTime s
+          originalStartTime = addUTCTime (-(secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s)) gameStartTime
+          durationTime = diffUTCTime gameStartTime originalStartTime
+          elapsedTime = diffUTCTime (currentTime s) originalStartTime
 
-      -- trashy math to get a counter to go from 5 - 1, ugh...
-      elapsed = realToFrac (nominalDiffTimeToSeconds elapsedTime) :: Double
-      duration = realToFrac (nominalDiffTimeToSeconds durationTime) :: Double
-      counterNum = 1 + howMuchOnCounter s - ceiling (fromIntegral (howMuchOnCounter s) * (elapsed / duration))
+          -- trashy math to get a counter to go from 5 - 1, ugh...
+          elapsed = realToFrac (nominalDiffTimeToSeconds elapsedTime) :: Double
+          duration = realToFrac (nominalDiffTimeToSeconds durationTime) :: Double
+          counterNum = 1 + howMuchOnCounter s - ceiling (fromIntegral (howMuchOnCounter s) * (elapsed / duration))
       in 
         -- Just in case we render too quickly
         if counterNum == 0 || hasGameStarted s then 
-          str "GO!"
+          hBox [withAttr hitAttrName $ asciiThing "3", withAttr hitAttrName $ asciiThing "2", withAttr hitAttrName $ asciiThing "1", withAttr hitAttrName $ asciiThing "GO!"]
         else if counterNum < 0 || counterNum > howMuchOnCounter s then 
           str " "
+        else if counterNum == 3 then
+          withAttr errorAttrName $ asciiThing "3"
+        else if counterNum == 2 then 
+          hBox [withAttr errorAttrName $ asciiThing "3", withAttr errorAttrName $ asciiThing "2"]
         else 
-          str $ show counterNum
+          hBox [withAttr errorAttrName $ asciiThing "3", withAttr errorAttrName $ asciiThing "2", withAttr errorAttrName $ asciiThing "1"]
+    asciiThing x = str ("._______.\n" ++ "|       |\n" ++ (padString 8 ("|   " ++ x)) ++ "|\n" ++ "|_______|")
 
 -- computeCarPadding will take the percent completion the user is and multiply by the width of
 -- the terminal space. So when the user is done, we'll be at 100%
@@ -111,7 +120,7 @@ draw s
   | hasEnded s = pure . center . padAll 1 . vBox $ [topRow s, drawText s, drawResults s]
   | otherwise =
     pure . center . padAll 1 . vBox $ [topRow s, showCursor () (Location $ cursor s) $ drawText s <=> str " "]
-  where topRow s = vBox [drawStartCountdown s, hBox [drawPlayer s "(You)" (me s)], drawPlayer s "(CPU)" (cpu s)]
+  where topRow s = vBox [drawStartCountdown s, drawPlayer s "(You)" (me s), drawPlayer s "(CPU)" (cpu s)]
 
 handleChar :: Char -> State -> EventM () (Next State)
 handleChar c s
@@ -174,8 +183,8 @@ handleStartEvent s = do
   let later = addUTCTime (secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s) now
   return s {startGameTime = later}
 
-app :: Attr -> Attr -> Attr -> App State CounterEvent ()
-app emptyAttr errorAttr resultAttr =
+app :: Attr -> Attr -> Attr -> Attr -> App State CounterEvent ()
+app hitAttr emptyAttr errorAttr resultAttr =
   App
     { appDraw = draw
     , appChooseCursor = showFirstCursor
@@ -185,7 +194,9 @@ app emptyAttr errorAttr resultAttr =
         const $
         attrMap
           defAttr
-          [ (emptyAttrName, emptyAttr)
+          [ 
+            (hitAttrName, hitAttr)
+          , (emptyAttrName, emptyAttr)
           , (errorAttrName, errorAttr)
           , (resultAttrName, resultAttr)
           ]
@@ -213,8 +224,8 @@ setTimer stop ioOperation ms =
           putMVar stop False
           f
 
-run :: Word8 -> Word8 -> State -> IO Bool
-run fgEmptyCode fgErrorCode initialState = do
+run :: Word8 -> Word8 -> Word8 -> State -> IO Bool
+run fgHitCode fgEmptyCode fgErrorCode initialState = do
   stopFlag <- newEmptyMVar
   putMVar stopFlag False
 
@@ -224,11 +235,12 @@ run fgEmptyCode fgErrorCode initialState = do
   -- set a timer to keep running
   setTimer stopFlag (counterThread eventChan) 32
   finalState <- customMain initialVty buildVty
-                    (Just eventChan) (app emptyAttr errorAttr resultAttr) initialState
+                    (Just eventChan) (app hitAttr emptyAttr errorAttr resultAttr) initialState
   
   putMVar stopFlag True
   return $ loop finalState
   where
+    hitAttr = fg . ISOColor $ fgHitCode
     emptyAttr = fg . ISOColor $ fgEmptyCode
     errorAttr = flip withStyle bold . fg . ISOColor $ fgErrorCode
     -- abusing the fgErrorCode to use as a highlight colour for the results here

@@ -112,3 +112,8 @@ I think we should still be able to hit our goals. Maybe the UI won't look as nic
 ## If not, how will you modify your goals?
 
 We'll limit the scope of our cosmetic improvements. We absolutely need that multiplayer implementation though. If it really comes down to it, we'll limit development on that and fully improve cosmetic features intead, but I hope it doesn't come to that.
+
+
+# Credits
+
+We bootstrapped using the [gotta-go-fast](https://github.com/callum-oakley/gotta-go-fast) library, which has the BSD-3 license so our usage is in accordance with that.

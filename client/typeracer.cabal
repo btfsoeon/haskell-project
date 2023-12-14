@@ -17,7 +17,7 @@ data-dir:       textfiles
 library
   exposed-modules:
       Lib
-      TypingTest
+      Typeracer
       UI
   other-modules:
       Paths_typeracer

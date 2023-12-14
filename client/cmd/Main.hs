@@ -19,18 +19,15 @@ import           Text.Wrap              (WrapSettings (..), defaultWrapSettings,
                                          wrapText)
 
 import           UI                     (run)
-import           TypingTest             (initialState)
+import           Typeracer             (initialState)
 
 data Config =
   Config
-    { fg_empty          :: Word8
+    { fg_hit            :: Word8
+    , fg_empty          :: Word8
     , fg_error          :: Word8
     , files             :: [FilePath]
     , height            :: Int
-    , max_paragraph_len :: Int
-    , min_paragraph_len :: Int
-    , paragraph         :: Bool
-    , reflow_           :: Bool
     , tab               :: Int
     , width             :: Int
     }
@@ -56,30 +53,26 @@ trimEmptyLines = f . f
 config :: Config
 config =
   Config
-    { fg_empty =
-        8 &= typ "COLOUR" &=
+    { 
+      fg_hit =
+        6 &= typ "COLOUR" &=
+        help "The ANSI colour code for typed text"
+    , fg_empty =
+        0 &= typ "COLOUR" &=
         help "The ANSI colour code for empty (not yet typed) text"
     , fg_error = 1 &= typ "COLOUR" &= help "The ANSI colour code for errors"
     , height =
         20 &= typ "LINES" &=
         help "The maximum number of lines to sample (default: 20)"
-    , max_paragraph_len =
-        750 &= typ "WORDS" &=
-        help "The maximum length of a sampled paragraph (default: 750)"
-    , min_paragraph_len =
-        250 &= typ "WORDS" &=
-        help "The minimum length of a sampled paragraph (default: 250)"
-    , paragraph = def &= help "Sample a paragraph from the input files"
-    , reflow_ = def &= help "Reflow paragraph to the target width"
     , tab = 4 &= typ "SIZE" &= help "The size of a tab in spaces (default: 4)"
     , width =
         80 &= typ "CHARS" &=
         help "The width at which to wrap lines (default: 80)"
     , files = def &= args &= typ "FILES"
     } &=
-  summary "Typeracer 0.0.0.1" &=
-  help "Practice typing against a friend!." &=
-  program "gotta-go-fast"
+  summary "Typeracer 0.1.0.0" &=
+  help "Practice typing against a cpu!." &=
+  program "typeracer"
 
 wrap :: Int -> String -> String
 wrap width = T.unpack . wrapText wrapSettings width . T.pack
@@ -112,5 +105,5 @@ main = do
 
   target <- sample c file
   let s = initialState target car
-  loop <- run (fg_empty c) (fg_error c) s
+  loop <- run (fg_hit c) (fg_empty c) (fg_error c) s
   when loop main
