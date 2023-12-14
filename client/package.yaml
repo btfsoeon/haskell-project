@@ -2,9 +2,6 @@ name: typeracer
 version: 0.1.0.0
 license: BSD3
 
-extra-source-files:
-  - README.md
-
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
 # category:            Web

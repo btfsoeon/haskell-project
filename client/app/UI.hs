@@ -213,8 +213,8 @@ setTimer stop ioOperation ms =
           putMVar stop False
           f
 
-run :: Word8 -> Word8 -> State -> WS.Connection -> IO Bool
-run fgEmptyCode fgErrorCode initialState conn = do
+run :: Word8 -> Word8 -> State -> IO Bool
+run fgEmptyCode fgErrorCode initialState = do
   stopFlag <- newEmptyMVar
   putMVar stopFlag False
 

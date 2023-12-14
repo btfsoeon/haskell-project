@@ -80,11 +80,7 @@ data State = State
     strokes :: Integer,
     hits :: Integer,
     loop :: Bool
-<<<<<<< Updated upstream
   } deriving (Show)
-=======
-  } deriving Show
->>>>>>> Stashed changes
 
 -- For ease of rendering a character in the UI, we tag it as a Hit, Miss, or
 -- Empty. Corresponding to the cases of being correctly typed, incorrectly

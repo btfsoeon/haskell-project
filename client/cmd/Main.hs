@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE LambdaCase         #-}
 {-# LANGUAGE TemplateHaskell    #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Main where
 
@@ -21,15 +20,6 @@ import           Text.Wrap              (WrapSettings (..), defaultWrapSettings,
 
 import           UI                     (run)
 import           TypingTest             (initialState)
-
-import           Control.Concurrent  (forkIO)
-import           Control.Monad       (forever, unless)
-import           Control.Monad.Trans (liftIO)
-import           Network.Socket      (withSocketsDo)
-import           Data.Text           (Text)
-import qualified Data.Text           as T
-import qualified Data.Text.IO        as T
-import qualified Network.WebSockets  as WS
 
 data Config =
   Config
@@ -114,34 +104,13 @@ sample c file = sampleLine
     entries = splitOn "^_^" ascii
     chop = unlines . take (height c) . lines
 
-app :: WS.ClientApp ()
-app conn = do
-    putStrLn "Connected!"
-
-    -- Fork a thread that writes WS data to stdout
-    _ <- forkIO $ forever $ do
-        msg <- WS.receiveData conn
-        liftIO $ T.putStrLn msg
-
-    putStrLn "Enter your name:"
-    name <- T.getLine
-    WS.sendTextData conn ("Hi! I am " `mappend` name)
-
-    c <- cmdArgs config
-    file <- readFile "textfiles/passages.txt"
-    car <- readFile "textfiles/car.txt"
-    target <- sample c file
-
-    let s = initialState target car
-    loop <- run (fg_empty c) (fg_error c) s conn
-    when loop main
-
-    -- Read from stdin and write to WS
-    -- let loop2 = do
-    --         line <- T.getLine
-    --         unless (T.null line) $ WS.sendTextData conn line >> loop2
-    -- loop2
-    WS.sendClose conn ("Bye!" :: Text)
-
 main :: IO ()
-main = withSocketsDo $ WS.runClient "127.0.0.1" 8001 "/" app
+main = do
+  c <- cmdArgs config
+  file <- readFile "textfiles/passages.txt"
+  car <- readFile "textfiles/car.txt"
+
+  target <- sample c file
+  let s = initialState target car
+  loop <- run (fg_empty c) (fg_error c) s
+  when loop main
