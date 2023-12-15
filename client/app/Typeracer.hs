@@ -151,7 +151,7 @@ applyChar c s =
         ws -> ws
 
 applyBackspace :: State -> State
-applyBackspace s = s {me = (cpu s) { input = reverse . drop n . reverse $ input $ me s}}
+applyBackspace s = s {me = (me s) { input = reverse . drop n . reverse $ input $ me s}}
   where
     n =
       case takeWhile (\(i, t) -> isSpace i && isSpace t) . reverse $
@@ -160,7 +160,7 @@ applyBackspace s = s {me = (cpu s) { input = reverse . drop n . reverse $ input 
         ws -> length ws
 
 applyBackspaceWord :: State -> State
-applyBackspaceWord s = s {me = (cpu s) {input = reverse . drop n . reverse $ input $ me s }}
+applyBackspaceWord s = s {me = (me s) {input = reverse . drop n . reverse $ input $ me s }}
   where
     n = toWordBeginning . reverse $ input $ me s
     toWordBeginning "" = 0
@@ -226,7 +226,7 @@ currentWpm s p = do
       if isJust $ finishTime p
         then do
           let timeElapsed = realToFrac $ diffUTCTime (fromJust $ finishTime p) (fromJust startTime)
-              charsPerSecond = fromIntegral (length $ longestCommonPrefix (target s) (input p)) / timeElapsed
+              charsPerSecond = fromIntegral (length $ target s) / timeElapsed
           return $ round $ charsPerSecond * 60 / 5
         else do
           timeElapsed <- nowMinusStart s
@@ -241,7 +241,7 @@ tick s = if hasStartedTyping s
                   inputLength = length rawInput
                   prefixLength = length currentString
                  -- if we are done, no need to type any further
-              in if inputLength == length (target s) then
+              in if prefixLength == length (target s) then
                    if isJust (finishTime $ cpu s) then
                      s
                    else s {cpu = (cpu s) {finishTime = Just now}}

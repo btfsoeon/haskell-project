@@ -27,7 +27,6 @@ data Config =
     , fg_empty          :: Word8
     , fg_error          :: Word8
     , files             :: [FilePath]
-    , height            :: Int
     , tab               :: Int
     , width             :: Int
     }
@@ -61,9 +60,6 @@ config =
         0 &= typ "COLOUR" &=
         help "The ANSI colour code for empty (not yet typed) text"
     , fg_error = 1 &= typ "COLOUR" &= help "The ANSI colour code for errors"
-    , height =
-        20 &= typ "LINES" &=
-        help "The maximum number of lines to sample (default: 20)"
     , tab = 4 &= typ "SIZE" &= help "The size of a tab in spaces (default: 4)"
     , width =
         80 &= typ "CHARS" &=
@@ -90,12 +86,11 @@ sample :: Config -> String -> IO String
 sample c file = sampleLine
   where
     sampleLine = do
-      r <- randomRIO (0, max 0 $ length entries - height c)
+      r <- randomRIO (0, max 0 $ length entries - 1)
       let entry = entries !! r in
-        return . trimEmptyLines . chop . wrap (width c) . chop . unlines $ lines entry
+        return . trimEmptyLines . wrap (width c) . unlines $ lines entry
     ascii = toAscii (tab c) file
     entries = splitOn "^_^" ascii
-    chop = unlines . take (height c) . lines
 
 main :: IO ()
 main = do
