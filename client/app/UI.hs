@@ -71,12 +71,11 @@ drawStartCountdown :: State -> Widget ()
 drawStartCountdown s = countdown
   where 
     countdown =
-      let gameStartTime = startGameTime s
-          originalStartTime = addUTCTime (-(secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s)) gameStartTime
-          durationTime = diffUTCTime gameStartTime originalStartTime
+      let originalStartTime = addUTCTime (-(secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s)) (gameStartTime s)
+          durationTime = diffUTCTime (gameStartTime s) originalStartTime
           elapsedTime = diffUTCTime (currentTime s) originalStartTime
 
-          -- trashy math to get a counter to go from 5 - 1, ugh...
+          -- trashy math to get a counter to go from howMuchOnCounter - 1, ugh...
           elapsed = realToFrac (nominalDiffTimeToSeconds elapsedTime) :: Double
           duration = realToFrac (nominalDiffTimeToSeconds durationTime) :: Double
           counterNum = 1 + howMuchOnCounter s - ceiling (fromIntegral (howMuchOnCounter s) * (elapsed / duration))
@@ -127,9 +126,6 @@ handleChar c s
   | not $ hasGameStarted s = do
     -- ignore character if game hasn't started yet
     continue s
-  | not $ hasStartedTyping s = do
-    now <- liftIO getCurrentTime
-    continue $ startClock now s'
   | isComplete s' = do
     now <- liftIO getCurrentTime
     continue $ stopClock now s'
@@ -181,7 +177,7 @@ handleStartEvent :: State -> EventM () State
 handleStartEvent s = do
   now <- liftIO getCurrentTime
   let later = addUTCTime (secondsToNominalDiffTime $ fromIntegral $ howMuchOnCounter s) now
-  return s {startGameTime = later}
+  return s {gameStartTime = later}
 
 app :: Attr -> Attr -> Attr -> Attr -> App State CounterEvent ()
 app hitAttr emptyAttr errorAttr resultAttr =
@@ -214,7 +210,6 @@ setTimer stop ioOperation ms =
   forkIO $ f
   where
     f = do
-      threadDelay (ms*1000)
       shouldStop <- takeMVar stop
       if shouldStop then
         return ()
@@ -232,11 +227,12 @@ run fgHitCode fgEmptyCode fgErrorCode initialState = do
   eventChan <- Brick.BChan.newBChan 10
   let buildVty = Graphics.Vty.mkVty Graphics.Vty.defaultConfig
   initialVty <- buildVty
-  -- set a timer to keep running
-  setTimer stopFlag (counterThread eventChan) 32
+  -- set a timer to keep running, controlled by the stop flag
+  setTimer stopFlag (counterThread eventChan) 66
   finalState <- customMain initialVty buildVty
                     (Just eventChan) (app hitAttr emptyAttr errorAttr resultAttr) initialState
-  
+
+  -- Tell the timer to stop running
   putMVar stopFlag True
   return $ loop finalState
   where

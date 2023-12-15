@@ -15,14 +15,12 @@ module Typeracer
     countChars,
     hasEnded,
     hasGameStarted,
-    hasStartedTyping,
     initialState,
     isComplete,
     onLastLine,
     page,
     tick,
     seconds,
-    startClock,
     stopClock,
     finalWpm,
     currentWpm,
@@ -70,12 +68,11 @@ data State = State
     counter :: Int,
     -- how much we should count down by before starting
     howMuchOnCounter :: Int,
-    -- time when the game should start
-    startGameTime :: UTCTime,
     -- current time
     currentTime :: UTCTime,
-    -- time when the user started typing
-    gameStartTime :: Maybe UTCTime,
+    -- time when the game should start
+    gameStartTime :: UTCTime,
+    -- time when the user finished typing
     gameEndTime :: Maybe UTCTime,
     strokes :: Integer,
     hits :: Integer,
@@ -94,18 +91,12 @@ type Line = [Character]
 
 type Page = [Line]
 
-startClock :: UTCTime -> State -> State
-startClock now s = s {gameStartTime = Just now}
-
 stopClock :: UTCTime -> State -> State
 stopClock now s = s {gameEndTime = Just now, me = (me s) {finishTime = Just now}}
 
 hasGameStarted :: State -> Bool
 hasGameStarted state =
-  startGameTime state <= currentTime state
-
-hasStartedTyping :: State -> Bool
-hasStartedTyping = isJust . gameStartTime
+  gameStartTime state <= currentTime state
 
 hasEnded :: State -> Bool
 hasEnded = isJust . gameEndTime
@@ -180,10 +171,9 @@ initialState target car =
       carWidth = maximum (map length (lines car)),
       me = Player {input = takeWhile isSpace target, finishTime = Nothing},
       cpu = Player {input = takeWhile isSpace target, finishTime = Nothing},
-      gameStartTime = Nothing,
+      gameStartTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       gameEndTime = Nothing,
       howMuchOnCounter = 3,
-      startGameTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       currentTime = UTCTime (fromGregorian 1970 0 1) (secondsToDiffTime 0),
       strokes = 0,
       hits = 0,
@@ -219,13 +209,12 @@ noOfChars = length . input . me
 
 currentWpm :: State -> Player -> IO Int
 currentWpm s p = do
-  let startTime = gameStartTime s
-  if isNothing startTime
+  if not $ hasGameStarted s
     then return 0
     else
       if isJust $ finishTime p
         then do
-          let timeElapsed = realToFrac $ diffUTCTime (fromJust $ finishTime p) (fromJust startTime)
+          let timeElapsed = realToFrac $ diffUTCTime (fromJust $ finishTime p) (gameStartTime s)
               charsPerSecond = fromIntegral (length $ target s) / timeElapsed
           return $ round $ charsPerSecond * 60 / 5
         else do
@@ -235,7 +224,7 @@ currentWpm s p = do
 
 -- the clock has ticked, let's see whether to add cpu input or not
 tick :: State -> State
-tick s = if hasStartedTyping s
+tick s = if hasGameStarted s
          then let rawInput = input $ cpu s
                   currentString = longestCommonPrefix (target s) (input $ cpu s)
                   inputLength = length rawInput
@@ -248,8 +237,9 @@ tick s = if hasStartedTyping s
               else case randomNumber of
                  0 -> s
                  1 -> s { cpu = (cpu s) { input = rawInput ++ [nextChar rawInput (target s)]} }
-         -- if we haven't started typing don't do anything
-         else s
+         else
+             -- if the game has not started, don't do anything
+             s
          where now = unsafePerformIO getCurrentTime
                randomNumber = unsafePerformIO randomGen
                randomGen = do
@@ -258,7 +248,7 @@ tick s = if hasStartedTyping s
 nowMinusStart :: State -> IO Double
 nowMinusStart s = do
   currentTime <- getCurrentTime
-  let startTime = fromJust $ gameStartTime s
+  let startTime = gameStartTime s
   return $ realToFrac $ diffUTCTime currentTime startTime
 
 completionPercent :: State -> Player -> Double
@@ -274,7 +264,7 @@ isWinner :: State -> Player -> Bool
 isWinner s p = isEarlier (finishTime p) (finishTime (me s)) && isEarlier (finishTime p) (finishTime (cpu s))
 
 seconds :: State -> Double
-seconds s = realToFrac $ diffUTCTime (fromJust $ gameEndTime s) (fromJust $ gameStartTime s)
+seconds s = realToFrac $ diffUTCTime (fromJust $ gameEndTime s) (gameStartTime s)
 
 finalWpm :: State -> Int
 finalWpm s = round (fromIntegral (countChars s) / (5 * seconds s / 60))
