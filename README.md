@@ -116,7 +116,7 @@ We'll limit the scope of our cosmetic improvements. We absolutely need that mult
 
 # Credits
 
-We bootstrapped using the [gotta-go-fast](https://github.com/callum-oakley/gotta-go-fast) library, which has the BSD-3 license so our usage is in accordance with that.
+We bootstrapped using the [gotta-go-fast](https://github.com/callum-oakley/gotta-go-fast) library, which has the BSD-3 license so our usage is in accordance with that. For server implementation, we referred to [websockets](https://github.com/jaspervdj/websockets), which also has the BSD-3 license.
 
 ## What we bootstrapped
 
@@ -136,7 +136,7 @@ We bootstrapped using the [gotta-go-fast](https://github.com/callum-oakley/gotta
 * We added a game loop that would update the game state periodically
 * We added a words per minute graphic per player that would update as they typed
 * We added a car and road graphic per player 
-* We moved each car along their respectives road as players would get further along the text
+* We moved each car along their respective road as players would get further along the text
 * We added sensible replay functionality 
 * We distinguished between letters yet to be typed/letters typed/letters typed incorrectly and colored them brightly
 to help out players
