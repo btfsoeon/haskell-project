@@ -117,3 +117,28 @@ We'll limit the scope of our cosmetic improvements. We absolutely need that mult
 # Credits
 
 We bootstrapped using the [gotta-go-fast](https://github.com/callum-oakley/gotta-go-fast) library, which has the BSD-3 license so our usage is in accordance with that.
+
+## What we bootstrapped
+
+* We borrowed logic in setting up the application - i.e. arg handling. We did modify that logic to have our own args, but the initial set up came from that library.
+* We borrowed the initial schema of our State datatype and the logic on updating that state when typing characters. We updated the datatype significantly, but, again the setup came from that library.
+* We borrowed the rendering and wrapping of the initial selected text and made minor adjustments to this code
+* We borrowed the framework for determining typing accuracy i.e. Hits/Misses/Empty
+
+
+## What we added
+
+* We changed how the initial random text was selected and made it correctly handle newlines
+* We changed the file format for how texts would be stored so we could parse them easily
+* We added an "animated" countdown timer to start the game
+* We added another CPU player that would race against you
+* We added a way to detect and display the winner of the game
+* We added a game loop that would update the game state periodically
+* We added a words per minute graphic per player that would update as they typed
+* We added a car and road graphic per player 
+* We moved each car along their respectives road as players would get further along the text
+* We added sensible replay functionality 
+* We distinguished between letters yet to be typed/letters typed/letters typed incorrectly and colored them brightly
+to help out players
+
+As an aside, we had no intention of plagiarizing. The credits section above was present before the due date of the project. We transparently acknowledged we bootstrapped off an existing project, but we felt our projects were sufficiently different. We're deeply sorry if that was not the case or if that was not allowed.
